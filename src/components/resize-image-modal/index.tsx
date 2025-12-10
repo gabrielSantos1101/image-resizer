@@ -16,63 +16,76 @@ export type ImageResizerModalRef = {
 type CropperContentProps = {
 	children: React.ReactNode;
 	imageSrc: string;
-	defaultAspect?: number;
+	defaultRatio?: number;
 	onSave: (blob: Blob) => void;
 	onError?: (error: string) => void;
 };
 
 export const ResizeImageModal = forwardRef<ImageResizerModalRef, CropperContentProps>(
-	({ children, imageSrc, defaultAspect, onSave, onError }, ref) => {
+	({ children, imageSrc, defaultRatio, onSave, onError }, ref) => {
 		const isDesktop = useMediaQuery('(min-width: 768px)');
 		const [open, setOpen] = useState(false);
 		const [currentImageSrc, setCurrentImageSrc] = useState(imageSrc);
-		const [imageLoaded, setImageLoaded] = useState(false);
+		const [lockedRatio, setLockedRatio] = useState<number | undefined>(defaultRatio);
 
 		const service = useMachine(imageCropper.machine, {
 			id: useId(),
-			aspectRatio: defaultAspect,
+			aspectRatio: lockedRatio,
 		});
 
 		const api = imageCropper.connect(service, normalizeProps);
 
 		if (currentImageSrc !== imageSrc) {
 			setCurrentImageSrc(imageSrc);
-			setImageLoaded(false);
 		}
 
 		useImperativeHandle(ref, () => ({
 			handleShow: (path?: string) => {
 				if (path) {
 					setCurrentImageSrc(path);
-					setImageLoaded(false);
 				}
+				setLockedRatio(defaultRatio);
 				setOpen(true);
 			},
 			handleHide: () => {
 				setOpen(false);
-				setImageLoaded(false);
 			},
 			isOpen: open,
-		}), [open]);
+		}), [open, defaultRatio]);
 
 		const handleSave = async () => {
 			try {
+				console.log("🔄 Iniciando save da imagem...");
 				const result = await api.getCroppedImage();
+				console.log("📦 Resultado do crop:", result);
+
 				if (result instanceof Blob) {
+					console.log("✅ Blob gerado com sucesso");
+					console.log("📊 Tamanho:", result.size, "bytes");
+					console.log("📝 Tipo:", result.type);
 					onSave(result);
 					setOpen(false);
 				} else if (typeof result === 'string') {
+					console.log("🔗 Resultado é uma URL, convertendo para blob...");
 					fetch(result)
 						.then(res => res.blob())
 						.then(blob => {
+							console.log("✅ Blob convertido com sucesso");
+							console.log("📊 Tamanho:", blob.size, "bytes");
+							console.log("📝 Tipo:", blob.type);
 							onSave(blob);
 							setOpen(false);
 						})
-						.catch(() => onError?.("Failed to convert image"));
+						.catch((err) => {
+							console.error("❌ Erro ao converter URL para blob:", err);
+							onError?.("Failed to convert image");
+						});
 				} else {
+					console.error("❌ Resultado inválido:", result);
 					onError?.("Failed to generate image blob");
 				}
 			} catch (error) {
+				console.error("❌ Erro ao fazer crop:", error);
 				onError?.("Failed to crop image: " + (error as Error).message);
 			}
 		};
@@ -89,13 +102,13 @@ export const ResizeImageModal = forwardRef<ImageResizerModalRef, CropperContentP
 									{...api.getImageProps()}
 								/>
 
-								<div {...api.getSelectionProps()}>
+								<div {...api.getSelectionProps()} className="left-0">
 									{imageCropper.handles.map((position) => (
 										<div
 											key={position}
 											{...api.getHandleProps({ position })}
 										>
-											<span />
+											<span className="bg-red-500" />
 										</div>
 									))}
 								</div>
@@ -112,9 +125,6 @@ export const ResizeImageModal = forwardRef<ImageResizerModalRef, CropperContentP
 					open={open}
 					onOpenChange={(open) => {
 						setOpen(open);
-						if (!open) {
-							setImageLoaded(false);
-						}
 					}}
 				>
 					<DialogTrigger asChild>{children}</DialogTrigger>
@@ -127,22 +137,36 @@ export const ResizeImageModal = forwardRef<ImageResizerModalRef, CropperContentP
 						<div className="overflow-y-auto max-h-[calc(95vh-120px)]">
 							{renderContent()}
 						</div>
-						<DialogFooter className="pt-4">
-							<Button
-								type="button"
-								variant="outline"
-								onClick={() => setOpen(false)}
-							>
-								Cancelar
-							</Button>
-							<Button
-								type="button"
-								variant="default"
-								onClick={handleSave}
-								disabled={!imageLoaded}
-							>
-								Salvar
-							</Button>
+						<DialogFooter className="pt-4 flex justify-between">
+							<div className="flex gap-2">
+								{defaultRatio && (
+									<Button
+										type="button"
+										variant={lockedRatio === defaultRatio ? "default" : "secondary"}
+										onClick={() => {
+											setLockedRatio(lockedRatio === defaultRatio ? undefined : defaultRatio);
+										}}
+									>
+										{lockedRatio === defaultRatio ? "🔒 Proporção Travada" : "🔓 Liberar Proporção"}
+									</Button>
+								)}
+							</div>
+							<div className="flex gap-2">
+								<Button
+									type="button"
+									variant="outline"
+									onClick={() => setOpen(false)}
+								>
+									Cancelar
+								</Button>
+								<Button
+									type="button"
+									variant="default"
+									onClick={handleSave}
+								>
+									Salvar
+								</Button>
+							</div>
 						</DialogFooter>
 					</DialogContent>
 				</Dialog>
@@ -154,9 +178,6 @@ export const ResizeImageModal = forwardRef<ImageResizerModalRef, CropperContentP
 				open={open}
 				onOpenChange={(open) => {
 					setOpen(open);
-					if (!open) {
-						setImageLoaded(false);
-					}
 				}}
 			>
 				<DrawerTrigger asChild>{children}</DrawerTrigger>
@@ -167,22 +188,34 @@ export const ResizeImageModal = forwardRef<ImageResizerModalRef, CropperContentP
 					<div className="overflow-y-auto max-h-[calc(95vh-140px)]">
 						{renderContent()}
 					</div>
-					<DrawerFooter className="pt-4">
-						<Button
-							type="button"
-							variant="outline"
-							onClick={() => setOpen(false)}
-						>
-							Cancelar
-						</Button>
-						<Button
-							type="button"
-							variant="default"
-							onClick={handleSave}
-							disabled={!imageLoaded}
-						>
-							Salvar
-						</Button>
+					<DrawerFooter className="pt-4 flex flex-col gap-2">
+						{defaultRatio && (
+							<Button
+								type="button"
+								variant={lockedRatio === defaultRatio ? "default" : "secondary"}
+								onClick={() => {
+									setLockedRatio(lockedRatio === defaultRatio ? undefined : defaultRatio);
+								}}
+							>
+								{lockedRatio === defaultRatio ? "🔒 Proporção Travada" : "🔓 Liberar Proporção"}
+							</Button>
+						)}
+						<div className="flex gap-2">
+							<Button
+								type="button"
+								variant="outline"
+								onClick={() => setOpen(false)}
+							>
+								Cancelar
+							</Button>
+							<Button
+								type="button"
+								variant="default"
+								onClick={handleSave}
+							>
+								Salvar
+							</Button>
+						</div>
 					</DrawerFooter>
 				</DrawerContent>
 			</Drawer>

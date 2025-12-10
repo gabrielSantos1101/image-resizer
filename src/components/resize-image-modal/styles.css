@@ -44,7 +44,7 @@
   position: absolute;
   width: 20px;
   height: 20px;
-  pointer-events: auto; /* Ensure handles can capture events */
+  pointer-events: auto;
   z-index: 10;
   touch-action: none;
 }
@@ -116,7 +116,6 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-/* Ensure modal content doesn't interfere */
 .modal-cropper-container {
   position: relative;
   width: 100%;
@@ -124,7 +123,6 @@
   overflow: visible;
 }
 
-/* Fix for modal overlay issues */
 [data-part="root"] * {
   box-sizing: border-box;
 }
