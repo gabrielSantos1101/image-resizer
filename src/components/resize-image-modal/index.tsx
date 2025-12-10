@@ -102,7 +102,7 @@ export const ResizeImageModal = forwardRef<ImageResizerModalRef, CropperContentP
 									{...api.getImageProps()}
 								/>
 
-								<div {...api.getSelectionProps()} className="left-0">
+								<div {...api.getSelectionProps()}>
 									{imageCropper.handles.map((position) => (
 										<div
 											key={position}

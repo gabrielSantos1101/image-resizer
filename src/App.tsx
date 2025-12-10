@@ -9,6 +9,7 @@ function App() {
   const [croppedImage, setCroppedImage] = useState<string | null>(null);
   const service = useMachine(imageCropper.machine, {
     id: useId(),
+    fixedCropArea: true
   });
 
   const api = imageCropper.connect(service, normalizeProps);
