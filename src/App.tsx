@@ -1,59 +1,58 @@
-import * as imageCropper from "@zag-js/image-cropper"
-import { normalizeProps, useMachine } from "@zag-js/react"
-import { useId, useState, useCallback } from "react"
+import * as imageCropper from "@zag-js/image-cropper";
+import { normalizeProps, useMachine } from "@zag-js/react";
+import { useId, useRef } from "react";
+import { ResizeImageModal, type ImageResizerModalRef } from "./components/resize-image-modal";
+
 
 function App() {
-  const [src, setSrc] = useState("https://picsum.photos/seed/crop/640/400")
+  const modalRef = useRef<ImageResizerModalRef>(null);
   const service = useMachine(imageCropper.machine, {
     id: useId(),
-    image: src,
-    fixedCropArea: true,
-    defaultZoom: 1.25,
-    minZoom: 1,
-    maxZoom: 5,
-    defaultRotation: 0,
-    defaultFlip: { horizontal: false, vertical: false },
-  })
+  });
 
-  const api = imageCropper.connect(service, normalizeProps)
+  const api = imageCropper.connect(service, normalizeProps);
 
-  const handleFileChange = useCallback((event) => {
-    const file = event.target.files[0]
-    if (!file) return
-    const reader = new FileReader()
-    reader.onload = (e) => setSrc(e.target.result)
-    reader.readAsDataURL(file)
-  }, [])
+  const handleSave = (blob: Blob) => {
+    console.log(blob);
+  };
 
   return (
-    <main>
-      <input type="file" accept="image/*" onChange={handleFileChange} />
-      <div {...api.getRootProps()}>
-        <div {...api.getViewportProps()}>
-          <img
-            src={src}
-            crossOrigin="anonymous"
-            {...api.getImageProps()}
-          />
+    <main className="dark p-8 space-y-4">
+      <h1 className="text-2xl font-bold text-white">Image Resizer Test</h1>
 
-          <div {...api.getSelectionProps()}>
-            {imageCropper.handles.map((position) => (
-              <div key={position} {...api.getHandleProps({ position })}>
-                <span />
-              </div>
-            ))}
+      <div className="flex-1 min-h-0 relative bg-black/5 rounded-lg overflow-hidden flex items-center justify-center">
+        <div {...api.getRootProps()}>
+          <div {...api.getViewportProps()}>
+            <img
+              src="https://picsum.photos/seed/crop/640/400"
+              crossOrigin="anonymous"
+              {...api.getImageProps()}
+            />
+
+            <div {...api.getSelectionProps()}>
+              {imageCropper.handles.map((position) => (
+                <div
+                  key={position}
+                  {...api.getHandleProps({ position })}
+                >
+                  <span />
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
-      <button onClick={() => api.setZoom(api.zoom - 0.1)}>-</button>
-      <button onClick={() => api.setZoom(api.zoom + 0.1)}>+</button>
-      <button onClick={() => api.setRotation(90)}>Rotate</button>
-      <button onClick={() => api.flipHorizontally(!api.flip.horizontal)}>Flip Horizontal</button>
-      <button onClick={() => api.flipVertically(!api.flip.vertical)}>Flip Vertical</button>
-      <button onClick={() => api.setZoom(1.25)}>Reset Zoom</button>
-      <button onClick={() => api.setRotation(0)}>Reset Rotation</button>
-      <button onClick={() => api.setFlip({ horizontal: false, vertical: false })}>Reset Flip</button>
 
+      <ResizeImageModal
+        ref={modalRef}
+        imageSrc="https://picsum.photos/seed/crop/640/400"
+        onSave={handleSave}
+        onError={(error) => console.error("Error:", error)}
+      >
+        <button className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded">
+          Open with Trigger (16:9 Aspect)
+        </button>
+      </ResizeImageModal>
     </main>
   )
 }
