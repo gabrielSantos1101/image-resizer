@@ -1,18 +1,10 @@
-import * as imageCropper from "@zag-js/image-cropper";
-import { normalizeProps, useMachine } from "@zag-js/react";
-import { useId, useRef, useState } from "react";
-import { ResizeImageModal, type ImageResizerModalRef } from "./components/resize-image-modal";
-
+import { useRef, useState } from "react";
+import { ImageCropperModal, type ImageCropperModalRef } from "./components/resize-image-modal";
+import { Button } from "./components/ui/button";
 
 function App() {
-  const modalRef = useRef<ImageResizerModalRef>(null);
+  const modalRef = useRef<ImageCropperModalRef>(null);
   const [croppedImage, setCroppedImage] = useState<string | null>(null);
-  const service = useMachine(imageCropper.machine, {
-    id: useId(),
-    fixedCropArea: true
-  });
-
-  const api = imageCropper.connect(service, normalizeProps);
 
   const handleSave = (blob: Blob) => {
     console.log("📊 Tamanho do arquivo:", (blob.size / 1024).toFixed(2), "KB");
@@ -22,63 +14,39 @@ function App() {
   };
 
   return (
-    <main className="dark p-8 space-y-4">
-      <h1 className="text-2xl font-bold text-white">Image Resizer Test</h1>
+    <main className="w-dvw h-dvh flex flex-col items-center justify-center py-14 px-8 space-y-4">
+      <h1 className="text-4xl font-bold text-white">Image Resizer Test</h1>
 
-      <div className="flex-1 min-h-0 relative bg-black/5 rounded-lg overflow-hidden flex items-center justify-center">
-        <div {...api.getRootProps()}>
-          <div {...api.getViewportProps()}>
-            <img
-              src="https://picsum.photos/seed/crop/640/400"
-              crossOrigin="anonymous"
-              {...api.getImageProps()}
-            />
+      <ImageCropperModal
+        ref={modalRef}
+        onCrop={handleSave}
+      />
 
-            <div {...api.getSelectionProps()}>
-              {imageCropper.handles.map((position) => (
-                <div
-                  key={position}
-                  {...api.getHandleProps({ position })}
-                >
-                  <span />
-                </div>
-              ))}
+      <Button className="text-white" onClick={() => modalRef.current?.open('https://files.curseduca.com/f6ccf6de9e56976a4b4032a16e5019e294221b00/8c777108.JPG')}>Recortar Imagem</Button>
+
+      {
+        croppedImage && (
+          <div className="mt-8 p-4 bg-gray-900 rounded-lg border border-gray-700">
+            <h2 className="text-xl font-bold text-white mb-4">📸 Preview da Imagem Recortada</h2>
+            <div className="flex flex-col gap-4">
+              <div>
+                <img
+                  src={croppedImage}
+                  alt="Imagem recortada"
+                  className="rounded-lg aspect-auto max-h-[50dvh] max-w-[70dvw] w-auto border border-gray-600"
+                />
+              </div>
+              <button
+                onClick={() => setCroppedImage(null)}
+                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded w-fit"
+              >
+                Limpar Preview
+              </button>
             </div>
           </div>
-        </div>
-      </div>
-
-      <ResizeImageModal
-        ref={modalRef}
-        imageSrc="https://picsum.photos/seed/crop/640/400"
-        defaultRatio={16 / 9}
-        onSave={handleSave}
-        onError={(error) => console.error("Error:", error)}
-      >
-        <button className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded">
-          Open with Trigger (16:9 Aspect)
-        </button>
-      </ResizeImageModal>
-
-      {croppedImage && (
-        <div className="mt-8 p-4 bg-gray-900 rounded-lg border border-gray-700">
-          <h2 className="text-xl font-bold text-white mb-4">📸 Preview da Imagem Recortada</h2>
-          <div className="flex flex-col gap-4">
-            <img
-              src={croppedImage}
-              alt="Imagem recortada"
-              className="max-w-full h-auto rounded-lg border border-gray-600"
-            />
-            <button
-              onClick={() => setCroppedImage(null)}
-              className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded w-fit"
-            >
-              Limpar Preview
-            </button>
-          </div>
-        </div>
-      )}
-    </main>
+        )
+      }
+    </main >
   )
 }
 

@@ -1,226 +1,187 @@
-import * as imageCropper from "@zag-js/image-cropper";
-import { normalizeProps, useMachine } from "@zag-js/react";
-import { forwardRef, useId, useImperativeHandle, useState } from "react";
-import { useMediaQuery } from "../../lib/use-mediaquery";
-import { Button } from "../ui/button";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTrigger } from "../ui/dialog";
-import { Drawer, DrawerContent, DrawerFooter, DrawerHeader, DrawerTrigger } from "../ui/drawer";
-import "./styles.css";
+"use client"
 
-export type ImageResizerModalRef = {
-	handleShow: (path?: string) => void;
-	handleHide: () => void;
-	isOpen: boolean;
-};
+import { Button } from "@/components/ui/button"
+import * as imageCropper from "@zag-js/image-cropper"
+import { normalizeProps, useMachine } from "@zag-js/react"
+import { FlipHorizontal, FlipVertical, RotateCw, ZoomIn, ZoomOut } from "lucide-react"
+import { forwardRef, useCallback, useId, useImperativeHandle, useRef, useState } from "react"
+import { Dialog, DialogClose, DialogContent } from "../ui/dialog"
+import "./styles.css"
 
-type CropperContentProps = {
-	children: React.ReactNode;
-	imageSrc: string;
-	defaultRatio?: number;
-	onSave: (blob: Blob) => void;
-	onError?: (error: string) => void;
-};
+export interface ImageCropperModalRef {
+	open: (imagePath: string) => void
+	close: () => void
+}
 
-export const ResizeImageModal = forwardRef<ImageResizerModalRef, CropperContentProps>(
-	({ children, imageSrc, defaultRatio, onSave, onError }, ref) => {
-		const isDesktop = useMediaQuery('(min-width: 768px)');
-		const [open, setOpen] = useState(false);
-		const [currentImageSrc, setCurrentImageSrc] = useState(imageSrc);
-		const [lockedRatio, setLockedRatio] = useState<number | undefined>(defaultRatio);
+export interface ImageCropperModalProps {
+	onCrop?: (blob: Blob) => void
+}
 
-		const service = useMachine(imageCropper.machine, {
-			id: useId(),
-			aspectRatio: lockedRatio,
-		});
+export const ImageCropperModal = forwardRef<ImageCropperModalRef, ImageCropperModalProps>(({ onCrop }, ref) => {
+	const [isOpen, setIsOpen] = useState(false)
+	const [imageSrc, setImageSrc] = useState<string>("")
+	const [machineKey, setMachineKey] = useState(0)
+	const id = useId()
+	const imageRef = useRef<HTMLImageElement>(null)
 
-		const api = imageCropper.connect(service, normalizeProps);
+	const service = useMachine(imageCropper.machine, {
+		id: `${id}-${machineKey}`,
+		minZoom: 1,
+		maxZoom: 3,
+	})
 
-		if (currentImageSrc !== imageSrc) {
-			setCurrentImageSrc(imageSrc);
-		}
+	const api = imageCropper.connect(service, normalizeProps)
 
-		useImperativeHandle(ref, () => ({
-			handleShow: (path?: string) => {
-				if (path) {
-					setCurrentImageSrc(path);
-				}
-				setLockedRatio(defaultRatio);
-				setOpen(true);
-			},
-			handleHide: () => {
-				setOpen(false);
-			},
-			isOpen: open,
-		}), [open, defaultRatio]);
+	useImperativeHandle(ref, () => ({
+		open: (imagePath: string) => {
+			setImageSrc(imagePath)
+			setMachineKey((k) => k + 1)
+			setIsOpen(true)
+		},
+		close: () => {
+			setIsOpen(false)
+			setImageSrc("")
+		},
+	}))
 
-		const handleSave = async () => {
-			try {
-				console.log("🔄 Iniciando save da imagem...");
-				const result = await api.getCroppedImage();
-				console.log("📦 Resultado do crop:", result);
-
-				if (result instanceof Blob) {
-					console.log("✅ Blob gerado com sucesso");
-					console.log("📊 Tamanho:", result.size, "bytes");
-					console.log("📝 Tipo:", result.type);
-					onSave(result);
-					setOpen(false);
-				} else if (typeof result === 'string') {
-					console.log("🔗 Resultado é uma URL, convertendo para blob...");
-					fetch(result)
-						.then(res => res.blob())
-						.then(blob => {
-							console.log("✅ Blob convertido com sucesso");
-							console.log("📊 Tamanho:", blob.size, "bytes");
-							console.log("📝 Tipo:", blob.type);
-							onSave(blob);
-							setOpen(false);
-						})
-						.catch((err) => {
-							console.error("❌ Erro ao converter URL para blob:", err);
-							onError?.("Failed to convert image");
-						});
-				} else {
-					console.error("❌ Resultado inválido:", result);
-					onError?.("Failed to generate image blob");
-				}
-			} catch (error) {
-				console.error("❌ Erro ao fazer crop:", error);
-				onError?.("Failed to crop image: " + (error as Error).message);
+	const handleSave = useCallback(async () => {
+		try {
+			const imgElement = imageRef.current
+			if (!imgElement) {
+				console.error("Imagem não encontrada")
+				return
 			}
-		};
 
-		const renderContent = () => {
-			return (
-				<div className="modal-cropper-container" style={{ padding: '20px 0' }}>
-					<div className="flex-1 min-h-0 relative bg-black/5 rounded-lg overflow-hidden flex items-center justify-center">
-						<div {...api.getRootProps()}>
-							<div {...api.getViewportProps()}>
-								<img
-									src="https://picsum.photos/seed/crop/640/400"
-									crossOrigin="anonymous"
-									{...api.getImageProps()}
-								/>
+			const selectionEl = document.querySelector('[data-scope="image-cropper"][data-part="selection"]') as HTMLElement
+			const imageEl = document.querySelector('[data-scope="image-cropper"][data-part="image"]') as HTMLImageElement
 
-								<div {...api.getSelectionProps()}>
-									{imageCropper.handles.map((position) => (
-										<div
-											key={position}
-											{...api.getHandleProps({ position })}
-										>
-											<span className="bg-red-500" />
+			if (!selectionEl || !imageEl) {
+				console.error("Elementos não encontrados")
+				return
+			}
+
+			const selectionRect = selectionEl.getBoundingClientRect()
+			const imageRect = imageEl.getBoundingClientRect()
+
+			const relX = selectionRect.left - imageRect.left
+			const relY = selectionRect.top - imageRect.top
+			const relWidth = selectionRect.width
+			const relHeight = selectionRect.height
+
+			const scaleX = imageEl.naturalWidth / imageRect.width
+			const scaleY = imageEl.naturalHeight / imageRect.height
+
+			const cropX = Math.max(0, relX * scaleX)
+			const cropY = Math.max(0, relY * scaleY)
+			const cropWidth = Math.min(relWidth * scaleX, imageEl.naturalWidth - cropX)
+			const cropHeight = Math.min(relHeight * scaleY, imageEl.naturalHeight - cropY)
+
+			const canvas = document.createElement("canvas")
+			canvas.width = cropWidth
+			canvas.height = cropHeight
+			const ctx = canvas.getContext("2d")
+
+			if (!ctx) {
+				console.error("Não foi possível criar contexto do canvas")
+				return
+			}
+
+			const img = new Image()
+			img.crossOrigin = "anonymous"
+
+			await new Promise<void>((resolve, reject) => {
+				img.onload = () => resolve()
+				img.onerror = reject
+				img.src = imageSrc
+			})
+
+			ctx.drawImage(img, cropX, cropY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight)
+
+			canvas.toBlob(
+				(blob) => {
+					if (blob) {
+						onCrop?.(blob)
+						setIsOpen(false)
+					}
+				},
+				"image/png",
+				0.92,
+			)
+		} catch (error) {
+			console.error("Erro ao recortar imagem:", error)
+		}
+	}, [imageSrc, onCrop])
+
+	return (
+		<Dialog open={isOpen} onOpenChange={setIsOpen}>
+			<DialogContent className="md:max-w-6xl">
+				<div className="p-4">
+					{imageSrc && isOpen && (
+						<div key={machineKey} {...api.getRootProps()} className="relative w-full">
+							<div className="flex-1 min-h-0 relative bg-black/5 rounded-lg overflow-hidden flex items-center justify-center">
+								<div {...api.getRootProps()}>
+									<div {...api.getViewportProps()}>
+										<img
+											ref={imageRef}
+											key={machineKey}
+											src={imageSrc}
+											alt="Imagem para recorte"
+											crossOrigin="anonymous"
+											{...api.getImageProps()}
+										/>
+
+										<div {...api.getSelectionProps()}>
+											{imageCropper.handles.map((position) => (
+												<div
+													key={position}
+													{...api.getHandleProps({
+														position
+													})}
+												>
+													<span className="bg-red-500" />
+												</div>
+											))}
 										</div>
-									))}
+									</div>
 								</div>
 							</div>
 						</div>
+					)}
+
+					{/* Controls */}
+					<div className="flex items-center justify-center gap-2 mt-4">
+						<Button variant="outline" size="icon" onClick={() => api.zoomBy(-0.1)} title="Diminuir zoom">
+							<ZoomOut className="w-4 h-4" />
+						</Button>
+						<span className="text-sm text-muted-foreground min-w-[60px] text-center">
+							{Math.round(api.zoom * 100)}%
+						</span>
+						<Button variant="outline" size="icon" onClick={() => api.zoomBy(0.1)} title="Aumentar zoom">
+							<ZoomIn className="w-4 h-4" />
+						</Button>
+						<div className="w-px h-6 bg-border mx-2" />
+						<Button variant="outline" size="icon" onClick={() => api.rotateBy(90)} title="Rotacionar 90°">
+							<RotateCw className="w-4 h-4" />
+						</Button>
+						<Button variant="outline" size="icon" onClick={() => api.flipHorizontally()} title="Espelhar horizontal">
+							<FlipHorizontal className="w-4 h-4" />
+						</Button>
+						<Button variant="outline" size="icon" onClick={() => api.flipVertically()} title="Espelhar vertical">
+							<FlipVertical className="w-4 h-4" />
+						</Button>
 					</div>
 				</div>
-			);
-		};
 
-		if (isDesktop) {
-			return (
-				<Dialog
-					open={open}
-					onOpenChange={(open) => {
-						setOpen(open);
-					}}
-				>
-					<DialogTrigger asChild>{children}</DialogTrigger>
-					<DialogContent className="max-w-4xl w-full max-h-[95vh] overflow-hidden" forceMount>
-						<DialogHeader className="pb-4">
-							<h3 className="text-lg font-semibold">
-								Gerenciar Mídias do Banner
-							</h3>
-						</DialogHeader>
-						<div className="overflow-y-auto max-h-[calc(95vh-120px)]">
-							{renderContent()}
-						</div>
-						<DialogFooter className="pt-4 flex justify-between">
-							<div className="flex gap-2">
-								{defaultRatio && (
-									<Button
-										type="button"
-										variant={lockedRatio === defaultRatio ? "default" : "secondary"}
-										onClick={() => {
-											setLockedRatio(lockedRatio === defaultRatio ? undefined : defaultRatio);
-										}}
-									>
-										{lockedRatio === defaultRatio ? "🔒 Proporção Travada" : "🔓 Liberar Proporção"}
-									</Button>
-								)}
-							</div>
-							<div className="flex gap-2">
-								<Button
-									type="button"
-									variant="outline"
-									onClick={() => setOpen(false)}
-								>
-									Cancelar
-								</Button>
-								<Button
-									type="button"
-									variant="default"
-									onClick={handleSave}
-								>
-									Salvar
-								</Button>
-							</div>
-						</DialogFooter>
-					</DialogContent>
-				</Dialog>
-			);
-		}
+				<div className="flex items-center justify-end gap-3 p-4">
+					<DialogClose asChild>
+						<Button variant="outline">Cancelar</Button>
+					</DialogClose>
+					<Button className="bg-primary dark:bg-primary text-white" onClick={handleSave}>Salvar Recorte</Button>
+				</div>
+			</DialogContent>
 
-		return (
-			<Drawer
-				open={open}
-				onOpenChange={(open) => {
-					setOpen(open);
-				}}
-			>
-				<DrawerTrigger asChild>{children}</DrawerTrigger>
-				<DrawerContent className="px-4 max-h-[95vh] overflow-hidden" forceMount>
-					<DrawerHeader>
-						<h3 className="text-lg font-semibold">Gerenciar Mídias do Banner</h3>
-					</DrawerHeader>
-					<div className="overflow-y-auto max-h-[calc(95vh-140px)]">
-						{renderContent()}
-					</div>
-					<DrawerFooter className="pt-4 flex flex-col gap-2">
-						{defaultRatio && (
-							<Button
-								type="button"
-								variant={lockedRatio === defaultRatio ? "default" : "secondary"}
-								onClick={() => {
-									setLockedRatio(lockedRatio === defaultRatio ? undefined : defaultRatio);
-								}}
-							>
-								{lockedRatio === defaultRatio ? "🔒 Proporção Travada" : "🔓 Liberar Proporção"}
-							</Button>
-						)}
-						<div className="flex gap-2">
-							<Button
-								type="button"
-								variant="outline"
-								onClick={() => setOpen(false)}
-							>
-								Cancelar
-							</Button>
-							<Button
-								type="button"
-								variant="default"
-								onClick={handleSave}
-							>
-								Salvar
-							</Button>
-						</div>
-					</DrawerFooter>
-				</DrawerContent>
-			</Drawer>
-		);
-	}
-);
+		</Dialog>
+	)
+})
 
-ResizeImageModal.displayName = "ResizeImageModal";
+ImageCropperModal.displayName = "ImageCropperModal"
