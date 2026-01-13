@@ -1,7 +1,7 @@
 'use client'
 
 import { useImageResizerStore } from './store'
-import type { UseImageResizerReturn } from './types'
+import type { ImageResizerConfig, ImageResizerStyles, UseImageResizerReturn } from './types'
 
 /**
  * Hook to access the image resizer functionality
@@ -42,11 +42,17 @@ export function useImageResizer(): UseImageResizerReturn {
 	 * Trigger function that opens the resizer dialog with the provided image URL
 	 * 
 	 * @param imageUrl - The URL of the image to resize
+	 * @param styles - Optional custom styles to override provider-level styles
+	 * @param config - Optional configuration to override provider-level config
 	 * @returns A promise that resolves with the blob URL when the user saves,
 	 *          or rejects if the user cancels or an error occurs
 	 */
-	const resizeImage = (imageUrl: string): Promise<string> => {
-		return open(imageUrl)
+	const resizeImage = (
+		imageUrl: string,
+		styles?: ImageResizerStyles,
+		config?: ImageResizerConfig
+	): Promise<string> => {
+		return open(imageUrl, styles, config)
 	}
 
 	return {

@@ -189,6 +189,8 @@ export interface UseImageResizerReturn {
 	/**
 	 * Function to trigger the image resizer
 	 * @param imageUrl - The URL of the image to resize
+	 * @param styles - Optional custom styles to override provider-level styles
+	 * @param config - Optional configuration to override provider-level config
 	 * @returns A promise that resolves with the blob URL of the resized image
 	 * @throws Error if the image fails to load or canvas context cannot be created
 	 * @throws Error with message 'Cancelled' if the user cancels the operation
@@ -206,7 +208,7 @@ export interface UseImageResizerReturn {
 	 *   })
 	 * ```
 	 */
-	resizeImage: (imageUrl: string) => Promise<string>
+	resizeImage: (imageUrl: string, styles?: ImageResizerStyles, config?: ImageResizerConfig) => Promise<string>
 }
 
 /**
