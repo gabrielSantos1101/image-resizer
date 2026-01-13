@@ -56,7 +56,11 @@ export const ImageResizerDialog = () => {
     useEffect(() => {
         return () => {
             if (!isOpen) {
-                revokeBlobUrls()
+                try {
+                    revokeBlobUrls()
+                } catch (error) {
+                    console.error("Error during blob URL cleanup:", error)
+                }
             }
         }
     }, [isOpen, revokeBlobUrls])
@@ -64,8 +68,9 @@ export const ImageResizerDialog = () => {
     const handleSave = useCallback(async () => {
         try {
             if (!imageUrl) {
-                console.error("No image URL provided")
-                cancel(new Error("No image URL provided"))
+                const error = new Error("No image URL provided")
+                console.error(error.message)
+                cancel(error)
                 return
             }
 
@@ -73,8 +78,9 @@ export const ImageResizerDialog = () => {
             const imageEl = document.querySelector('[data-scope="image-cropper"][data-part="image"]') as HTMLImageElement
 
             if (!selectionEl || !imageEl) {
-                console.error("Cropper elements not found")
-                cancel(new Error("Cropper elements not found"))
+                const error = new Error("Cropper elements not found")
+                console.error(error.message)
+                cancel(error)
                 return
             }
 
@@ -97,51 +103,89 @@ export const ImageResizerDialog = () => {
             const canvas = document.createElement("canvas")
             canvas.width = cropWidth
             canvas.height = cropHeight
-            const ctx = canvas.getContext("2d")
+
+            let ctx: CanvasRenderingContext2D | null = null
+            try {
+                ctx = canvas.getContext("2d")
+            } catch (error) {
+                const contextError = new Error("Failed to create canvas context")
+                console.error(contextError.message, error)
+                cancel(contextError)
+                return
+            }
 
             if (!ctx) {
-                console.error("Failed to create canvas context")
-                cancel(new Error("Failed to create canvas context"))
+                const error = new Error("Canvas context is null")
+                console.error(error.message)
+                cancel(error)
                 return
             }
 
             const img = new Image()
             img.crossOrigin = "anonymous"
 
-            await new Promise<void>((resolve, reject) => {
-                img.onload = () => resolve()
-                img.onerror = reject
-                img.src = imageUrl
-            })
+            try {
+                await new Promise<void>((resolve, reject) => {
+                    img.onload = () => resolve()
+                    img.onerror = () => {
+                        reject(new Error(`Failed to load image from URL: ${imageUrl}`))
+                    }
+                    img.src = imageUrl
+                })
+            } catch (error) {
+                const loadError = error instanceof Error ? error : new Error("Image load failed")
+                console.error(loadError.message)
+                cancel(loadError)
+                return
+            }
 
-            ctx.drawImage(img, cropX, cropY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight)
+            try {
+                ctx.drawImage(img, cropX, cropY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight)
+            } catch (error) {
+                const drawError = new Error("Failed to draw image on canvas")
+                console.error(drawError.message, error)
+                cancel(drawError)
+                return
+            }
 
             const imageFormat = config.imageFormat ?? 'image/png'
             const imageQuality = config.imageQuality ?? 0.92
 
             canvas.toBlob(
                 (blob) => {
-                    if (blob) {
+                    try {
+                        if (!blob) {
+                            cancel(new Error("Failed to create blob from canvas"))
+                            return
+                        }
+
                         const blobUrl = URL.createObjectURL(blob)
                         // Track the blob URL for cleanup
                         addBlobUrl(blobUrl)
                         save(blobUrl)
-                    } else {
-                        cancel(new Error("Failed to create blob"))
+                    } catch (error) {
+                        const blobError = error instanceof Error ? error : new Error("Failed to process blob")
+                        console.error(blobError.message)
+                        cancel(blobError)
                     }
                 },
                 imageFormat,
                 imageQuality,
             )
         } catch (error) {
-            console.error("Error cropping image:", error)
-            cancel(error instanceof Error ? error : new Error("Unknown error occurred"))
+            const unexpectedError = error instanceof Error ? error : new Error("Unknown error occurred during image cropping")
+            console.error("Unexpected error cropping image:", unexpectedError)
+            cancel(unexpectedError)
         }
     }, [imageUrl, config, save, cancel, addBlobUrl])
 
     const handleOpenChange = (open: boolean) => {
         if (!open) {
-            cancel(new Error("Cancelled"))
+            try {
+                cancel(new Error("User cancelled the resize operation"))
+            } catch (error) {
+                console.error("Error during cancellation:", error)
+            }
         }
     }
 
