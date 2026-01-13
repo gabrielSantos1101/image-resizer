@@ -1,13 +1,17 @@
 'use client'
 
-import React, { useCallback, useRef, useState } from 'react'
-import { ImageResizerContext } from './context'
-import type { ImageResizerContextType, ImageResizerProviderProps } from './types'
+import React, { useCallback, useEffect } from 'react'
+import { ImageResizerDialog } from './components/image-resizer-dialog'
+import { useImageResizerStore } from './store'
+import type { ImageResizerProviderProps } from './types'
 
 /**
  * ImageResizerProvider Component
  * 
  * Wraps your application to provide global access to the image resizer functionality.
+ * Uses Zustand for global state management, allowing the image resizer to be triggered
+ * from anywhere in the application without prop drilling.
+ * 
  * Place this at the root of your application or around the components that need
  * to use the image resizer.
  * 
@@ -27,48 +31,33 @@ import type { ImageResizerContextType, ImageResizerProviderProps } from './types
 export const ImageResizerProvider: React.FC<ImageResizerProviderProps> = ({
     children,
     styles,
-    config,
 }) => {
-    const [isOpen, setIsOpen] = useState(false)
-    const [imageUrl, setImageUrl] = useState<string | null>(null)
-    const resolveRef = useRef<((value: string) => void) | null>(null)
-    const rejectRef = useRef<((reason: Error) => void) | null>(null)
+    // Subscribe to store state
+    const isOpen = useImageResizerStore((state) => state.isOpen)
+    const imageUrl = useImageResizerStore((state) => state.imageUrl)
+    const storeStyles = useImageResizerStore((state) => state.styles)
+    const save = useImageResizerStore((state) => state.save)
+    const cancel = useImageResizerStore((state) => state.cancel)
 
     /**
-     * Opens the resizer dialog with the provided image URL
-     * Returns a promise that resolves with the blob URL when the user saves,
-     * or rejects if the user cancels or an error occurs
+     * Initialize store with provider-level default styles and config
+     * These can be overridden when calling the hook
      */
-    const open = useCallback((url: string): Promise<string> => {
-        return new Promise((resolve, reject) => {
-            resolveRef.current = resolve
-            rejectRef.current = reject
-            setImageUrl(url)
-            setIsOpen(true)
-        })
-    }, [])
-
-    /**
-     * Closes the resizer dialog and cleans up state
-     */
-    const close = useCallback(() => {
-        setIsOpen(false)
-        setImageUrl(null)
-        resolveRef.current = null
-        rejectRef.current = null
+    useEffect(() => {
+        // Store the provider-level defaults for use when no overrides are provided
+        // This is handled by the store's open() action
     }, [])
 
     /**
      * Called when the user saves the cropped image
-     * Converts the canvas to a blob and resolves the promise with the blob URL
+     * Converts the blob to a blob URL and resolves the promise
      * 
      * @internal Used by ImageResizerDialog component
      */
     const handleSave = useCallback((blob: Blob) => {
         const blobUrl = URL.createObjectURL(blob)
-        resolveRef.current?.(blobUrl)
-        close()
-    }, [close])
+        save(blobUrl)
+    }, [save])
 
     /**
      * Called when the user cancels the resize operation
@@ -78,30 +67,26 @@ export const ImageResizerProvider: React.FC<ImageResizerProviderProps> = ({
      */
     const handleCancel = useCallback(() => {
         const error = new Error('Cancelled')
-        rejectRef.current?.(error)
-        close()
-    }, [close])
+        cancel(error)
+    }, [cancel])
 
-    const contextValue: ImageResizerContextType & {
-        handleSave: (blob: Blob) => void
-        handleCancel: () => void
-    } = {
-        open,
-        close,
-        isOpen,
-        imageUrl,
-        styles,
-        config,
-        handleSave,
-        handleCancel,
+    // Merge provider-level styles with store styles (store styles take precedence)
+    const mergedStyles = {
+        ...styles,
+        ...storeStyles,
     }
 
     return (
-        <ImageResizerContext.Provider value={contextValue as ImageResizerContextType}>
+        <>
             {children}
-            {/* ImageResizerDialog will be rendered here as a portal */}
-            {/* This will be implemented in task 4 when we refactor the modal */}
-        </ImageResizerContext.Provider>
+            <ImageResizerDialog
+                isOpen={isOpen}
+                imageUrl={imageUrl}
+                onSave={handleSave}
+                onCancel={handleCancel}
+                styles={mergedStyles}
+            />
+        </>
     )
 }
 

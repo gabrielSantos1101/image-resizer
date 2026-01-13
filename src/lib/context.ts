@@ -1,5 +1,5 @@
 import { createContext } from 'react'
-import { ImageResizerContextType } from './types'
+import type { ImageResizerContextType } from './types'
 
 /**
  * React Context for the Image Resizer Toast Library

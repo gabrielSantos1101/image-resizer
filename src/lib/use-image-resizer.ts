@@ -1,7 +1,6 @@
 'use client'
 
-import { useContext } from 'react'
-import { ImageResizerContext } from './context'
+import { useImageResizerStore } from './store'
 import type { UseImageResizerReturn } from './types'
 
 /**
@@ -10,8 +9,11 @@ import type { UseImageResizerReturn } from './types'
  * This hook must be used within a component that is wrapped by ImageResizerProvider.
  * It returns a function that can be called to trigger the image resizer dialog.
  * 
+ * The hook uses Zustand for global state management, so it can be called from
+ * any component in the application without prop drilling.
+ * 
  * @returns An object containing the resizeImage function
- * @throws Error if used outside of ImageResizerProvider
+ * @throws Error if the store is not initialized (should not happen if provider is set up correctly)
  * 
  * @example
  * ```typescript
@@ -34,14 +36,7 @@ import type { UseImageResizerReturn } from './types'
  * ```
  */
 export function useImageResizer(): UseImageResizerReturn {
-	const context = useContext(ImageResizerContext)
-
-	if (!context) {
-		throw new Error(
-			'useImageResizer must be used within an ImageResizerProvider. ' +
-			'Make sure your component is wrapped with <ImageResizerProvider>.'
-		)
-	}
+	const open = useImageResizerStore((state) => state.open)
 
 	/**
 	 * Trigger function that opens the resizer dialog with the provided image URL
@@ -51,7 +46,7 @@ export function useImageResizer(): UseImageResizerReturn {
 	 *          or rejects if the user cancels or an error occurs
 	 */
 	const resizeImage = (imageUrl: string): Promise<string> => {
-		return context.open(imageUrl)
+		return open(imageUrl)
 	}
 
 	return {
