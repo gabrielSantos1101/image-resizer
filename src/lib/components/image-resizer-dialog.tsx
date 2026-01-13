@@ -5,88 +5,67 @@ import { Dialog, DialogClose, DialogContent } from "@/components/ui/dialog"
 import * as imageCropper from "@zag-js/image-cropper"
 import { normalizeProps, useMachine } from "@zag-js/react"
 import { FlipHorizontal, FlipVertical, RotateCw, ZoomIn, ZoomOut } from "lucide-react"
-import { useCallback, useEffect, useId, useRef, useState } from "react"
+import { useCallback, useEffect, useId, useRef } from "react"
+import { useShallow } from "zustand/react/shallow"
+import { useImageResizerStore } from "../store"
 import "../styles/image-resizer-dialog.css"
-import type { ImageResizerStyles } from "../types"
-
-/**
- * Props for the ImageResizerDialog component
- */
-export interface ImageResizerDialogProps {
-    /**
-     * Whether the dialog is currently open
-     */
-    isOpen: boolean
-
-    /**
-     * The URL of the image to resize
-     */
-    imageUrl: string | null
-
-    /**
-     * Callback when the user saves the cropped image
-     * @param blob - The cropped image as a Blob
-     */
-    onSave: (blob: Blob) => void
-
-    /**
-     * Callback when the user cancels the operation
-     */
-    onCancel: () => void
-
-    /**
-     * Custom styles configuration for the dialog UI
-     */
-    styles?: ImageResizerStyles
-}
 
 /**
  * ImageResizerDialog Component
  * 
  * A modal dialog component that provides image cropping and resizing functionality.
+ * Reads state from the Zustand store and calls store actions for save/cancel operations.
  * Supports zoom, rotation, and flip operations with customizable styling.
  * 
- * @example
- * ```typescript
- * <ImageResizerDialog
- *   isOpen={isOpen}
- *   imageUrl={imageUrl}
- *   onSave={(blob) => console.log('Saved:', blob)}
- *   onCancel={() => setIsOpen(false)}
- *   styles={{ dialog: { className: 'custom-dialog' } }}
- * />
- * ```
+ * This component is connected to the global image resizer store and should be
+ * rendered as a portal by the ImageResizerProvider.
+ * 
+ * @internal
  */
-export const ImageResizerDialog = ({
-    isOpen,
-    imageUrl,
-    onSave,
-    onCancel,
-    styles,
-}: ImageResizerDialogProps) => {
+export const ImageResizerDialog = () => {
+    // Read from store using useShallow to avoid unnecessary re-renders
+    const { isOpen, imageUrl, styles, config, save, cancel, addBlobUrl, revokeBlobUrls } = useImageResizerStore(
+        useShallow((state) => ({
+            isOpen: state.isOpen,
+            imageUrl: state.imageUrl,
+            styles: state.styles,
+            config: state.config,
+            save: state.save,
+            cancel: state.cancel,
+            addBlobUrl: state.addBlobUrl,
+            revokeBlobUrls: state.revokeBlobUrls,
+        }))
+    )
+
     const id = useId()
     const imageRef = useRef<HTMLImageElement>(null)
-    const [machineKey, setMachineKey] = useState(0)
+    // Use imageUrl as part of the machine ID to force recreation when image changes
+    const machineId = `${id}-${imageUrl}`
 
     const service = useMachine(imageCropper.machine, {
-        id: `${id}-${machineKey}`,
-        minZoom: 1,
-        maxZoom: 3,
+        id: machineId,
+        minZoom: config.minZoom ?? 1,
+        maxZoom: config.maxZoom ?? 3,
     })
 
     const api = imageCropper.connect(service, normalizeProps)
 
-    // Reset machine key when image URL changes
+    /**
+     * Clean up blob URLs when dialog closes
+     */
     useEffect(() => {
-        if (isOpen && imageUrl) {
-            setMachineKey((prev: number) => prev + 1)
+        return () => {
+            if (!isOpen) {
+                revokeBlobUrls()
+            }
         }
-    }, [isOpen, imageUrl])
+    }, [isOpen, revokeBlobUrls])
 
     const handleSave = useCallback(async () => {
         try {
             if (!imageUrl) {
                 console.error("No image URL provided")
+                cancel(new Error("No image URL provided"))
                 return
             }
 
@@ -95,6 +74,7 @@ export const ImageResizerDialog = ({
 
             if (!selectionEl || !imageEl) {
                 console.error("Cropper elements not found")
+                cancel(new Error("Cropper elements not found"))
                 return
             }
 
@@ -121,6 +101,7 @@ export const ImageResizerDialog = ({
 
             if (!ctx) {
                 console.error("Failed to create canvas context")
+                cancel(new Error("Failed to create canvas context"))
                 return
             }
 
@@ -135,23 +116,32 @@ export const ImageResizerDialog = ({
 
             ctx.drawImage(img, cropX, cropY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight)
 
+            const imageFormat = config.imageFormat ?? 'image/png'
+            const imageQuality = config.imageQuality ?? 0.92
+
             canvas.toBlob(
                 (blob) => {
                     if (blob) {
-                        onSave(blob)
+                        const blobUrl = URL.createObjectURL(blob)
+                        // Track the blob URL for cleanup
+                        addBlobUrl(blobUrl)
+                        save(blobUrl)
+                    } else {
+                        cancel(new Error("Failed to create blob"))
                     }
                 },
-                "image/png",
-                0.92,
+                imageFormat,
+                imageQuality,
             )
         } catch (error) {
             console.error("Error cropping image:", error)
+            cancel(error instanceof Error ? error : new Error("Unknown error occurred"))
         }
-    }, [imageUrl, onSave])
+    }, [imageUrl, config, save, cancel, addBlobUrl])
 
     const handleOpenChange = (open: boolean) => {
         if (!open) {
-            onCancel()
+            cancel(new Error("Cancelled"))
         }
     }
 
@@ -163,7 +153,7 @@ export const ImageResizerDialog = ({
             >
                 <div className="p-4">
                     {imageUrl && isOpen && (
-                        <div key={machineKey} {...api.getRootProps()} className="relative w-full">
+                        <div key={machineId} {...api.getRootProps()} className="relative w-full">
                             <div
                                 className="flex-1 min-h-0 relative bg-black/5 rounded-lg overflow-hidden flex items-center justify-center"
                                 {...(styles?.viewport?.className && { className: styles.viewport.className })}
@@ -173,7 +163,7 @@ export const ImageResizerDialog = ({
                                     <div {...api.getViewportProps()}>
                                         <img
                                             ref={imageRef}
-                                            key={machineKey}
+                                            key={machineId}
                                             src={imageUrl}
                                             alt="Image for cropping"
                                             crossOrigin="anonymous"

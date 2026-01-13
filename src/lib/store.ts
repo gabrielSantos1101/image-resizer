@@ -23,6 +23,7 @@ interface ImageResizerStoreState {
 	config: ImageResizerConfig
 	pendingResolve: ((blobUrl: string) => void) | null
 	pendingReject: ((error: Error) => void) | null
+	blobUrls: Set<string>
 
 	// Actions
 	open: (
@@ -33,6 +34,8 @@ interface ImageResizerStoreState {
 	close: () => void
 	save: (blobUrl: string) => void
 	cancel: (error: Error) => void
+	addBlobUrl: (blobUrl: string) => void
+	revokeBlobUrls: () => void
 }
 
 /**
@@ -54,6 +57,7 @@ export const useImageResizerStore = create<ImageResizerStoreState>((set, get) =>
 	config: {},
 	pendingResolve: null,
 	pendingReject: null,
+	blobUrls: new Set(),
 
 	// Actions
 	/**
@@ -61,6 +65,10 @@ export const useImageResizerStore = create<ImageResizerStoreState>((set, get) =>
 	 * Returns a Promise that resolves when the user saves or rejects when they cancel
 	 */
 	open: (imageUrl, styles, config) => {
+		// Revoke any previous blob URLs before opening a new image
+		const { revokeBlobUrls } = get()
+		revokeBlobUrls()
+
 		return new Promise<string>((resolve, reject) => {
 			set({
 				isOpen: true,
@@ -105,15 +113,45 @@ export const useImageResizerStore = create<ImageResizerStoreState>((set, get) =>
 	 * Cancels the resize operation and rejects the pending Promise
 	 */
 	cancel: (error: Error) => {
-		const { pendingReject } = get()
+		const { pendingReject, revokeBlobUrls } = get()
 		if (pendingReject) {
 			pendingReject(error)
 		}
+		// Clean up blob URLs on cancellation
+		revokeBlobUrls()
 		set({
 			isOpen: false,
 			imageUrl: null,
 			pendingResolve: null,
 			pendingReject: null,
+		})
+	},
+
+	/**
+	 * Adds a blob URL to the tracking set
+	 * @internal Used by ImageResizerDialog to track created blob URLs
+	 */
+	addBlobUrl: (blobUrl: string) => {
+		set((state) => ({
+			blobUrls: new Set([...state.blobUrls, blobUrl]),
+		}))
+	},
+
+	/**
+	 * Revokes all tracked blob URLs to prevent memory leaks
+	 * @internal Called when closing dialog or opening a new image
+	 */
+	revokeBlobUrls: () => {
+		const { blobUrls } = get()
+		blobUrls.forEach((url) => {
+			try {
+				URL.revokeObjectURL(url)
+			} catch (error) {
+				console.error('Failed to revoke blob URL:', error)
+			}
+		})
+		set({
+			blobUrls: new Set(),
 		})
 	},
 }))
