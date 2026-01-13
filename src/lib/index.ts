@@ -41,6 +41,7 @@ export type {
     ImageResizerProviderProps, ImageResizerStyles, ResizeResult, UseImageResizerReturn
 } from './types';
 
-// Components and hooks will be exported here as they are created
-// export { ImageResizerProvider } from './provider'
-// export { useImageResizer } from './use-image-resizer'
+// Export components and hooks
+export { ImageResizerProvider } from './provider';
+export { useImageResizer } from './use-image-resizer';
+
