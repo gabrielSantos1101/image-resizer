@@ -1,28 +1,46 @@
-import { useRef, useState } from "react";
-import { ImageCropperModal, type ImageCropperModalRef } from "./components/resize-image-modal";
+import { useState } from "react";
 import { Button } from "./components/ui/button";
+import { ImageResizerProvider, resizeImage, type ImageResizerStyles } from "./lib";
 
-function App() {
-  const modalRef = useRef<ImageCropperModalRef>(null);
+/**
+ * AppContent component that uses the resizeImage function
+ * This must be inside the ImageResizerProvider
+ */
+function AppContent() {
   const [croppedImage, setCroppedImage] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSave = (blob: Blob) => {
-    console.log("📊 Tamanho do arquivo:", (blob.size / 1024).toFixed(2), "KB");
-    console.log("📦 Blob completo:", blob);
-    const imageUrl = URL.createObjectURL(blob);
-    setCroppedImage(imageUrl);
+  const handleResizeImage = () => {
+    setIsLoading(true);
+    resizeImage('https://files.curseduca.com/f6ccf6de9e56976a4b4032a16e5019e294221b00/8c777108.JPG', {
+      styles: {
+        dialog: { className: 'custom-dialog' },
+        controls: { className: 'hidden' },
+      }
+    })
+      .then((blobUrl: string) => {
+        console.log("✅ Imagem redimensionada com sucesso:", blobUrl);
+        setCroppedImage(blobUrl);
+      })
+      .catch((error: Error) => {
+        console.error("❌ Erro ao redimensionar imagem:", error);
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
   };
 
   return (
     <main className="w-dvw h-dvh flex flex-col items-center justify-center py-14 px-8 space-y-4">
       <h1 className="text-4xl font-bold text-white">Image Resizer Test</h1>
 
-      <ImageCropperModal
-        ref={modalRef}
-        onCrop={handleSave}
-      />
-
-      <Button className="text-white" onClick={() => modalRef.current?.open('https://files.curseduca.com/f6ccf6de9e56976a4b4032a16e5019e294221b00/8c777108.JPG')}>Recortar Imagem</Button>
+      <Button
+        className="text-white"
+        onClick={handleResizeImage}
+        disabled={isLoading}
+      >
+        {isLoading ? "Processando..." : "Recortar Imagem"}
+      </Button>
 
       {
         croppedImage && (
@@ -47,7 +65,29 @@ function App() {
         )
       }
     </main >
-  )
+  );
+}
+
+/**
+ * Main App component with ImageResizerProvider
+ * The provider wraps the entire application to make the image resizer
+ * globally accessible from any component
+ */
+function App() {
+  const customStyles: ImageResizerStyles = {
+    dialog: {
+      className: "custom-dialog",
+    },
+    controls: {
+      className: "custom-controls",
+    },
+  };
+
+  return (
+    <ImageResizerProvider styles={customStyles}>
+      <AppContent />
+    </ImageResizerProvider>
+  );
 }
 
 export default App

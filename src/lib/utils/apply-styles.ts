@@ -58,7 +58,6 @@ export function applyStyles(
 		return
 	}
 
-	// Apply dialog styles
 	if (styles.dialog) {
 		applyStylesToElement(
 			rootElement,
@@ -68,7 +67,6 @@ export function applyStyles(
 		)
 	}
 
-	// Apply viewport styles
 	if (styles.viewport) {
 		applyStylesToElement(
 			rootElement,
@@ -78,7 +76,6 @@ export function applyStyles(
 		)
 	}
 
-	// Apply selection styles
 	if (styles.selection) {
 		applyStylesToElement(
 			rootElement,
@@ -88,7 +85,6 @@ export function applyStyles(
 		)
 	}
 
-	// Apply handle styles
 	if (styles.handle) {
 		const handles = rootElement.querySelectorAll(ELEMENT_SELECTORS.handle)
 		handles.forEach((handle) => {
@@ -101,7 +97,6 @@ export function applyStyles(
 		})
 	}
 
-	// Apply controls styles
 	if (styles.controls) {
 		applyStylesToElement(
 			rootElement,
@@ -111,7 +106,6 @@ export function applyStyles(
 		)
 	}
 
-	// Apply button styles
 	if (styles.button) {
 		const buttons = rootElement.querySelectorAll(ELEMENT_SELECTORS.button)
 		buttons.forEach((button) => {
@@ -154,12 +148,10 @@ function applyStylesToElement(
 		return
 	}
 
-	// Apply CSS classes
 	if (className) {
 		element.classList.add(...className.split(' ').filter(Boolean))
 	}
 
-	// Apply inline styles
 	if (style) {
 		Object.entries(style).forEach(([key, value]) => {
 			if (value !== undefined && value !== null) {

@@ -2,12 +2,12 @@
  * Image Resizer Toast Library
  * 
  * A React library that provides a toast-like, globally accessible image resizer.
- * Place the ImageResizerProvider at the root of your application and use the
- * useImageResizer hook anywhere to trigger image resizing operations.
+ * Place the ImageResizerProvider at the root of your application and call
+ * resizeImage() from anywhere to trigger image resizing operations.
  * 
  * @example
  * ```typescript
- * import { ImageResizerProvider, useImageResizer } from '@/lib'
+ * import { ImageResizerProvider, resizeImage } from '@/lib'
  * 
  * function App() {
  *   return (
@@ -18,8 +18,6 @@
  * }
  * 
  * function MyComponent() {
- *   const { resizeImage } = useImageResizer()
- *   
  *   const handleResize = async () => {
  *     try {
  *       const blobUrl = await resizeImage('https://example.com/image.jpg')
@@ -38,10 +36,18 @@
 export type {
     ImageResizerConfig,
     ImageResizerContextType,
-    ImageResizerProviderProps, ImageResizerStyles, ResizeResult, UseImageResizerReturn
-} from './types';
+    ImageResizerProviderProps,
+    ImageResizerStyles,
+    ResizeImageOptions,
+    ResizeResult,
+    UseImageResizerReturn
+} from './types'
 
 // Export components and hooks
-export { ImageResizerProvider } from './provider';
-export { useImageResizer } from './use-image-resizer';
+export { ImageResizerProvider } from './provider'
+export { resizeImage } from './resize-image'
+export { useImageResizer } from './use-image-resizer'
+
+// Export Zustand store for advanced usage (optional)
+export { useImageResizerStore } from './store'
 

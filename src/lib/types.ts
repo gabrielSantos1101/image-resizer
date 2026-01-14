@@ -183,7 +183,23 @@ export interface ImageResizerProviderProps {
 }
 
 /**
+ * Options for the resizeImage function
+ */
+export interface ResizeImageOptions {
+	/**
+	 * Custom styles to override provider-level styles
+	 */
+	styles?: ImageResizerStyles
+
+	/**
+	 * Configuration to override provider-level config
+	 */
+	config?: ImageResizerConfig
+}
+
+/**
  * Return type for the useImageResizer hook
+ * @deprecated Use resizeImage function directly instead
  */
 export interface UseImageResizerReturn {
 	/**
