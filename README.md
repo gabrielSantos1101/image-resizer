@@ -1,36 +1,181 @@
-# Image Resizer with Zag Crop
+# Image Resizer Toast Library
 
-This project is a React-based image editor that leverages the powerful `@zag-js/image-cropper` library to provide robust image cropping functionalities. Users can upload an image, then utilize a variety of tools to precisely crop, zoom, rotate, and flip the image both horizontally and vertically. Once satisfied with the adjustments, the cropped image can be saved and previewed within the application.
+A React library that provides a toast-like, globally accessible image resizer. Similar to Sonner's toast API, you can trigger image resizing from anywhere in your application without prop drilling.
 
-## Key Features:
+## Key Features
 
-*   **Image Upload:** Easily load images into the editor.
-*   **Interactive Cropping:** Define a specific area of the image to keep.
-*   **Zoom Functionality:** Adjust the zoom level for precise cropping.
-*   **Rotation:** Rotate images by 90-degree increments.
-*   **Flipping:** Mirror images horizontally or vertically.
-*   **Live Preview:** See the cropped image in real-time before saving.
-*   **Save Cropped Image:** Export the final cropped image.
+- **Toast-like API**: Call `resizeImage()` directly, no hooks needed
+- **Global State**: Zustand-based state management for seamless integration
+- **Interactive Cropping**: Zoom, rotate, and flip images with intuitive controls
+- **Promise-based**: Async/await support for handling resize operations
+- **Customizable**: Full control over styles and configuration
+- **Type-safe**: Complete TypeScript support with JSDoc documentation
+- **Resource Management**: Automatic blob URL cleanup and memory management
 
-## Getting Started
+## Installation
 
-To run this project locally, follow these steps:
+```bash
+pnpm install
+```
 
-1.  **Clone the repository:**
-    ```bash
-    git clone https://github.com/gabrielSantos1101/image-resizer.git
-    ```
-2.  **Navigate to the project directory:**
-    ```bash
-    cd image-resizer
-    ```
-3.  **Install dependencies:**
-    ```bash
-    pnpm install
-    ```
-4.  **Start the development server:**
-    ```bash
-    pnpm dev
-    ```
+## Quick Start
 
-The application will be available at `http://localhost:5173` (or another port if 5173 is already in use).
+### 1. Wrap your app with the provider
+
+```typescript
+import { ImageResizerProvider } from '@/lib'
+
+function App() {
+  return (
+    <ImageResizerProvider>
+      <YourApp />
+    </ImageResizerProvider>
+  )
+}
+```
+
+### 2. Call `resizeImage()` from anywhere
+
+```typescript
+import { resizeImage } from '@/lib'
+
+function MyComponent() {
+  const handleResize = async () => {
+    try {
+      const blobUrl = await resizeImage('https://example.com/image.jpg')
+      console.log('Resized image:', blobUrl)
+      // Use the blob URL in an img tag or upload it
+    } catch (error) {
+      console.error('Resize failed:', error)
+    }
+  }
+
+  return <button onClick={handleResize}>Resize Image</button>
+}
+```
+
+## API Reference
+
+### `resizeImage(imageUrl, options?)`
+
+Triggers the image resizer dialog and returns a Promise with the blob URL.
+
+**Parameters:**
+- `imageUrl` (string): The URL of the image to resize
+- `options` (ResizeImageOptions, optional):
+  - `styles` (ImageResizerStyles): Custom styles for the dialog
+  - `config` (ImageResizerConfig): Configuration options
+
+**Returns:** `Promise<string>` - Resolves with blob URL on success, rejects on cancel/error
+
+**Example:**
+
+```typescript
+// Simple usage
+resizeImage('https://example.com/image.jpg')
+  .then(blobUrl => {
+    // Use the blob URL
+  })
+  .catch(error => {
+    // Handle error or cancellation
+  })
+
+// With custom options
+resizeImage('https://example.com/image.jpg', {
+  styles: {
+    dialog: { className: 'custom-dialog' },
+    controls: { className: 'custom-controls' }
+  },
+  config: {
+    imageFormat: 'image/jpeg',
+    imageQuality: 0.85,
+    minZoom: 0.5,
+    maxZoom: 5
+  }
+})
+```
+
+### `ImageResizerProvider`
+
+Wraps your application to provide global access to the image resizer.
+
+**Props:**
+- `children` (ReactNode): Child components
+- `styles` (ImageResizerStyles, optional): Default styles for all resize operations
+- `config` (ImageResizerConfig, optional): Default configuration for all resize operations
+
+**Example:**
+
+```typescript
+<ImageResizerProvider
+  styles={{
+    dialog: { className: 'my-dialog' },
+    controls: { className: 'my-controls' }
+  }}
+  config={{
+    imageFormat: 'image/png',
+    imageQuality: 0.92
+  }}
+>
+  <App />
+</ImageResizerProvider>
+```
+
+## Configuration Options
+
+### `ImageResizerConfig`
+
+```typescript
+interface ImageResizerConfig {
+  minZoom?: number              // Default: 1
+  maxZoom?: number              // Default: 3
+  defaultZoom?: number          // Default: 1
+  imageFormat?: string          // Default: 'image/png'
+  imageQuality?: number         // Default: 0.92 (0-1)
+}
+```
+
+### `ImageResizerStyles`
+
+```typescript
+interface ImageResizerStyles {
+  dialog?: { className?: string; style?: CSSProperties }
+  viewport?: { className?: string; style?: CSSProperties }
+  selection?: { className?: string; style?: CSSProperties }
+  handle?: { className?: string; style?: CSSProperties }
+  controls?: { className?: string; style?: CSSProperties }
+  button?: { className?: string; style?: CSSProperties }
+}
+```
+
+## Development
+
+### Start the dev server
+
+```bash
+pnpm dev
+```
+
+### Build for production
+
+```bash
+pnpm build
+```
+
+### Run linter
+
+```bash
+pnpm lint
+```
+
+## Architecture
+
+The library uses:
+- **Zustand**: Global state management
+- **@zag-js/image-cropper**: Image cropping functionality
+- **React**: UI framework
+- **TypeScript**: Type safety
+
+## License
+
+MIT
