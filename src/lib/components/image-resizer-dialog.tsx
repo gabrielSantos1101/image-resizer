@@ -1,14 +1,15 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { Dialog, DialogClose, DialogContent } from "@/components/ui/dialog"
+import { Dialog, DialogClose, DialogContent, DialogFooter } from "@/components/ui/dialog"
 import * as imageCropper from "@zag-js/image-cropper"
 import { normalizeProps, useMachine } from "@zag-js/react"
 import { FlipHorizontal, FlipVertical, RotateCw, ZoomIn, ZoomOut } from "lucide-react"
-import { useCallback, useEffect, useId, useRef } from "react"
+import { useCallback, useEffect, useId } from "react"
 import { useShallow } from "zustand/react/shallow"
 import { useImageResizerStore } from "../store"
 import "../styles/image-resizer-dialog.css"
+import { cn } from "../utils"
 
 /**
  * ImageResizerDialog Component
@@ -23,7 +24,6 @@ import "../styles/image-resizer-dialog.css"
  * @internal
  */
 export const ImageResizerDialog = () => {
-    // Read from store using useShallow to avoid unnecessary re-renders
     const { isOpen, imageUrl, styles, config, save, cancel, addBlobUrl, revokeBlobUrls } = useImageResizerStore(
         useShallow((state) => ({
             isOpen: state.isOpen,
@@ -38,8 +38,6 @@ export const ImageResizerDialog = () => {
     )
 
     const id = useId()
-    const imageRef = useRef<HTMLImageElement>(null)
-    // Use imageUrl as part of the machine ID to force recreation when image changes
     const machineId = `${id}-${imageUrl}`
 
     const service = useMachine(imageCropper.machine, {
@@ -50,9 +48,6 @@ export const ImageResizerDialog = () => {
 
     const api = imageCropper.connect(service, normalizeProps)
 
-    /**
-     * Clean up blob URLs when dialog closes
-     */
     useEffect(() => {
         return () => {
             if (!isOpen) {
@@ -192,46 +187,26 @@ export const ImageResizerDialog = () => {
     return (
         <Dialog open={isOpen} onOpenChange={handleOpenChange}>
             <DialogContent
-                className={styles?.dialog?.className}
+                className={cn("max-w-[70dvw]", styles?.dialog?.className)}
                 style={styles?.dialog?.style}
             >
-                <div className="p-4">
+                <div className="p-4 flex">
                     {imageUrl && isOpen && (
-                        <div key={machineId} {...api.getRootProps()} className="relative w-full">
-                            <div
-                                className="flex-1 min-h-0 relative bg-black/5 rounded-lg overflow-hidden flex items-center justify-center"
-                                {...(styles?.viewport?.className && { className: styles.viewport.className })}
-                                style={styles?.viewport?.style}
-                            >
-                                <div {...api.getRootProps()}>
-                                    <div {...api.getViewportProps()}>
-                                        <img
-                                            ref={imageRef}
-                                            key={machineId}
-                                            src={imageUrl}
-                                            alt="Image for cropping"
-                                            crossOrigin="anonymous"
-                                            {...api.getImageProps()}
-                                        />
-
-                                        <div
-                                            {...api.getSelectionProps()}
-                                            {...(styles?.selection?.className && { className: styles.selection.className })}
-                                            style={styles?.selection?.style}
-                                        >
-                                            {imageCropper.handles.map((position) => (
-                                                <div
-                                                    key={position}
-                                                    {...api.getHandleProps({
-                                                        position
-                                                    })}
-                                                    {...(styles?.handle?.className && { className: styles.handle.className })}
-                                                    style={styles?.handle?.style}
-                                                >
-                                                    <span className="bg-red-500" />
-                                                </div>
-                                            ))}
-                                        </div>
+                        <div className="flex bg-black rounded-sm image-container">
+                            <div {...api.getRootProps()} className="my-auto">
+                                <div {...api.getViewportProps()}>
+                                    <img
+                                        src={imageUrl}
+                                        alt="Dog to be cropped"
+                                        crossOrigin="anonymous"
+                                        {...api.getImageProps()}
+                                    />
+                                    <div {...api.getSelectionProps()}>
+                                        {imageCropper.handles.map((position) => (
+                                            <div key={position} {...api.getHandleProps({ position })}>
+                                                <div />
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
                             </div>
@@ -301,14 +276,14 @@ export const ImageResizerDialog = () => {
                     </div>
                 </div>
 
-                <div className="flex items-center justify-end gap-3 p-4">
+                <DialogFooter className="flex h-fit items-baseline justify-baseline">
                     <DialogClose asChild>
                         <Button variant="outline">Cancel</Button>
                     </DialogClose>
                     <Button className="bg-primary dark:bg-primary text-white" onClick={handleSave}>
                         Save Crop
                     </Button>
-                </div>
+                </DialogFooter>
             </DialogContent>
         </Dialog>
     )
