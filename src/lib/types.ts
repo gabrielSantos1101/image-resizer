@@ -107,12 +107,6 @@ export interface ImageResizerContextType {
 	config?: ImageResizerConfig
 }
 
-export interface ImageResizerProviderProps {
-	children: React.ReactNode
-	classNames?: ImageResizerClassNames
-	config?: ImageResizerConfig
-}
-
 export interface ResizeImageOptions {
 	classNames?: ImageResizerClassNames
 	config?: ImageResizerConfig

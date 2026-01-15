@@ -32,22 +32,17 @@
  * ```
  */
 
-// Export all types
 export type {
     ImageResizerConfig,
     ImageResizerContextType,
-    ImageResizerProviderProps,
-    ImageResizerStyles,
     ResizeImageOptions,
     ResizeResult,
     UseImageResizerReturn
 } from './types'
 
-// Export components and hooks
 export { ImageResizerProvider } from './provider'
 export { resizeImage } from './resize-image'
 export { useImageResizer } from './use-image-resizer'
 
-// Export Zustand store for advanced usage (optional)
 export { useImageResizerStore } from './store'
 

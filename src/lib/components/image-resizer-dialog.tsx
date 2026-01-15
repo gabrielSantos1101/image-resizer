@@ -155,7 +155,6 @@ export const ImageResizerDialog = () => {
                         }
 
                         const blobUrl = URL.createObjectURL(blob)
-                        // Track the blob URL for cleanup
                         addBlobUrl(blobUrl)
                         save(blobUrl)
                     } catch (error) {
@@ -189,7 +188,7 @@ export const ImageResizerDialog = () => {
             <DialogContent
                 className={cn("max-w-[70dvw]", classNames?.dialog)}
             >
-                <div className="p-4 flex">
+                <div className="p-4 flex flex-col">
                     {imageUrl && isOpen && (
                         <div className={cn("flex bg-black rounded-sm image-container", classNames?.imageContainer)}>
                             <div {...api.getRootProps()} className="my-auto">

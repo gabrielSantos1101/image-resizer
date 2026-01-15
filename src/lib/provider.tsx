@@ -1,47 +1,35 @@
 'use client'
 
-import React, { useEffect } from 'react'
+import React from 'react'
 import { ImageResizerDialog } from './components/image-resizer-dialog'
-import type { ImageResizerProviderProps } from './types'
 
 /**
  * ImageResizerProvider Component
  * 
- * Wraps your application to provide global access to the image resizer functionality.
- * Uses Zustand for global state management, allowing the image resizer to be triggered
- * from anywhere in the application without prop drilling.
+ * Provides global access to the image resizer functionality using Zustand for state management.
+ * Simply place this component once in your application (typically in your root layout or main App).
  * 
- * Place this at the root of your application or around the components that need
- * to use the image resizer.
+ * The provider manages the image resizer dialog globally, allowing you to trigger
+ * the resizer from anywhere in your application using the resizeImage function.
  * 
  * @example
  * ```typescript
  * import { ImageResizerProvider } from '@/lib'
  * 
- * export default function App() {
+ * export default function RootLayout() {
  *   return (
- *     <ImageResizerProvider>
- *       <YourApp />
- *     </ImageResizerProvider>
+ *     <html>
+ *       <body>
+ *         <ImageResizerProvider />
+ *         <YourApp />
+ *       </body>
+ *     </html>
  *   )
  * }
  * ```
  */
-export const ImageResizerProvider: React.FC<ImageResizerProviderProps> = ({
-    children,
-}) => {
-    // Initialize store with provider-level defaults
-    useEffect(() => {
-        // Store initialization is handled by the store itself
-        // This effect is here for future initialization logic if needed
-    }, [])
-
-    return (
-        <>
-            {children}
-            <ImageResizerDialog />
-        </>
-    )
+export const ImageResizerProvider: React.FC = () => {
+    return <ImageResizerDialog />
 }
 
 ImageResizerProvider.displayName = 'ImageResizerProvider'

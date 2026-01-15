@@ -20,16 +20,17 @@ pnpm install
 
 ## Quick Start
 
-### 1. Wrap your app with the provider
+### 1. Add the provider to your app
 
 ```typescript
 import { ImageResizerProvider } from '@/lib'
 
 function App() {
   return (
-    <ImageResizerProvider>
+    <>
+      <ImageResizerProvider />
       <YourApp />
-    </ImageResizerProvider>
+    </>
   )
 }
 ```
@@ -63,7 +64,7 @@ Triggers the image resizer dialog and returns a Promise with the blob URL.
 **Parameters:**
 - `imageUrl` (string): The URL of the image to resize
 - `options` (ResizeImageOptions, optional):
-  - `styles` (ImageResizerStyles): Custom styles for the dialog
+  - `classNames` (ImageResizerClassNames): Custom CSS class names for dialog elements
   - `config` (ImageResizerConfig): Configuration options
 
 **Returns:** `Promise<string>` - Resolves with blob URL on success, rejects on cancel/error
@@ -82,9 +83,9 @@ resizeImage('https://example.com/image.jpg')
 
 // With custom options
 resizeImage('https://example.com/image.jpg', {
-  styles: {
-    dialog: { className: 'custom-dialog' },
-    controls: { className: 'custom-controls' }
+  classNames: {
+    dialog: 'custom-dialog',
+    controls: 'custom-controls'
   },
   config: {
     imageFormat: 'image/jpeg',
@@ -97,28 +98,36 @@ resizeImage('https://example.com/image.jpg', {
 
 ### `ImageResizerProvider`
 
-Wraps your application to provide global access to the image resizer.
+Provides global access to the image resizer functionality. Simply place this component once in your application (typically in your root layout or main App).
 
-**Props:**
-- `children` (ReactNode): Child components
-- `styles` (ImageResizerStyles, optional): Default styles for all resize operations
-- `config` (ImageResizerConfig, optional): Default configuration for all resize operations
+**Props:** None - The provider doesn't accept any props
 
 **Example:**
 
 ```typescript
-<ImageResizerProvider
-  styles={{
-    dialog: { className: 'my-dialog' },
-    controls: { className: 'my-controls' }
-  }}
-  config={{
-    imageFormat: 'image/png',
-    imageQuality: 0.92
-  }}
->
-  <App />
-</ImageResizerProvider>
+// In your root layout or App component
+import { ImageResizerProvider } from '@/lib'
+
+function App() {
+  return (
+    <>
+      <ImageResizerProvider />
+      <YourApp />
+    </>
+  )
+}
+
+// Or in a Next.js layout
+export default function RootLayout() {
+  return (
+    <html>
+      <body>
+        <ImageResizerProvider />
+        <YourContent />
+      </body>
+    </html>
+  )
+}
 ```
 
 ## Configuration Options
@@ -135,16 +144,22 @@ interface ImageResizerConfig {
 }
 ```
 
-### `ImageResizerStyles`
+### `ImageResizerClassNames`
 
 ```typescript
-interface ImageResizerStyles {
-  dialog?: { className?: string; style?: CSSProperties }
-  viewport?: { className?: string; style?: CSSProperties }
-  selection?: { className?: string; style?: CSSProperties }
-  handle?: { className?: string; style?: CSSProperties }
-  controls?: { className?: string; style?: CSSProperties }
-  button?: { className?: string; style?: CSSProperties }
+interface ImageResizerClassNames {
+  dialog?: string
+  viewport?: string
+  selection?: string
+  handle?: string
+  controls?: string
+  button?: string
+  imageContainer?: string
+  zoomDisplay?: string
+  separator?: string
+  footer?: string
+  cancelButton?: string
+  saveButton?: string
 }
 ```
 

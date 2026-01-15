@@ -4,7 +4,6 @@ import { ImageResizerProvider, resizeImage } from "./lib";
 
 /**
  * AppContent component that uses the resizeImage function
- * This must be inside the ImageResizerProvider
  */
 function AppContent() {
   const [croppedImage, setCroppedImage] = useState<string | null>(null);
@@ -70,15 +69,16 @@ function AppContent() {
 }
 
 /**
- * Main App component with ImageResizerProvider
- * The provider wraps the entire application to make the image resizer
+ * Main App component
+ * The ImageResizerProvider is placed at the root to make the image resizer
  * globally accessible from any component
  */
 function App() {
   return (
-    <ImageResizerProvider>
+    <>
+      <ImageResizerProvider />
       <AppContent />
-    </ImageResizerProvider>
+    </>
   );
 }
 
