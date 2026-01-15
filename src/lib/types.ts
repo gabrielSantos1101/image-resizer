@@ -6,6 +6,45 @@
  */
 
 /**
+ * CSS class names for customizing individual parts of the Image Resizer modal.
+ * Provides a granular, object-based approach to applying custom classes to each UI element.
+ * 
+ * @example
+ * ```typescript
+ * const classNames: ImageResizerClassNames = {
+ *   dialog: 'custom-dialog-class',
+ *   button: 'custom-button-class',
+ *   cancelButton: 'custom-cancel-btn'
+ * }
+ * ```
+ */
+export interface ImageResizerClassNames {
+	dialog?: string
+
+	viewport?: string
+
+	selection?: string
+
+	handle?: string
+
+	controls?: string
+
+	button?: string
+
+	imageContainer?: string
+
+	zoomDisplay?: string
+
+	separator?: string
+
+	footer?: string
+
+	cancelButton?: string
+
+	saveButton?: string
+}
+
+/**
  * Custom styles configuration for the Image Resizer UI components.
  * Allows customization of CSS classes and inline styles for various UI elements.
  * 
@@ -19,62 +58,69 @@
  */
 export interface ImageResizerStyles {
 	/**
-	 * Styles for the main dialog container
+	 * Object containing CSS class names for each customizable part of the modal.
+	 * When both classNames and individual style className properties are provided,
+	 * classNames takes precedence.
 	 */
+	classNames?: ImageResizerClassNames
+
 	dialog?: {
-		/** CSS class name to apply to the dialog */
 		className?: string
-		/** Inline styles to apply to the dialog */
 		style?: React.CSSProperties
 	}
 
-	/**
-	 * Styles for the image viewport area
-	 */
 	viewport?: {
-		/** CSS class name to apply to the viewport */
 		className?: string
-		/** Inline styles to apply to the viewport */
 		style?: React.CSSProperties
 	}
 
-	/**
-	 * Styles for the selection/crop area
-	 */
 	selection?: {
-		/** CSS class name to apply to the selection */
 		className?: string
-		/** Inline styles to apply to the selection */
 		style?: React.CSSProperties
 	}
 
-	/**
-	 * Styles for the resize handles
-	 */
 	handle?: {
-		/** CSS class name to apply to handles */
 		className?: string
-		/** Inline styles to apply to handles */
 		style?: React.CSSProperties
 	}
 
-	/**
-	 * Styles for the controls container
-	 */
 	controls?: {
-		/** CSS class name to apply to controls */
 		className?: string
-		/** Inline styles to apply to controls */
 		style?: React.CSSProperties
 	}
 
-	/**
-	 * Styles for control buttons
-	 */
 	button?: {
-		/** CSS class name to apply to buttons */
 		className?: string
-		/** Inline styles to apply to buttons */
+		style?: React.CSSProperties
+	}
+
+	imageContainer?: {
+		className?: string
+		style?: React.CSSProperties
+	}
+
+	zoomDisplay?: {
+		className?: string
+		style?: React.CSSProperties
+	}
+
+	separator?: {
+		className?: string
+		style?: React.CSSProperties
+	}
+
+	footer?: {
+		className?: string
+		style?: React.CSSProperties
+	}
+
+	cancelButton?: {
+		className?: string
+		style?: React.CSSProperties
+	}
+
+	saveButton?: {
+		className?: string
 		style?: React.CSSProperties
 	}
 }
@@ -135,65 +181,21 @@ export interface ImageResizerContextType {
 	 *          or rejects if the operation is cancelled or fails
 	 */
 	open: (imageUrl: string) => Promise<string>
-
-	/**
-	 * Closes the resizer dialog
-	 */
 	close: () => void
-
-	/**
-	 * Whether the resizer dialog is currently open
-	 */
 	isOpen: boolean
-
-	/**
-	 * The current image URL being resized, or null if no image is open
-	 */
 	imageUrl: string | null
-
-	/**
-	 * Custom styles configuration for the resizer UI
-	 */
 	styles?: ImageResizerStyles
-
-	/**
-	 * Configuration options for the resizer behavior
-	 */
 	config?: ImageResizerConfig
 }
 
-/**
- * Props for the ImageResizerProvider component
- */
 export interface ImageResizerProviderProps {
-	/**
-	 * Child components that will have access to the image resizer via the hook
-	 */
 	children: React.ReactNode
-
-	/**
-	 * Custom styles configuration for the resizer UI
-	 */
 	styles?: ImageResizerStyles
-
-	/**
-	 * Configuration options for the resizer behavior
-	 */
 	config?: ImageResizerConfig
 }
 
-/**
- * Options for the resizeImage function
- */
 export interface ResizeImageOptions {
-	/**
-	 * Custom styles to override provider-level styles
-	 */
 	styles?: ImageResizerStyles
-
-	/**
-	 * Configuration to override provider-level config
-	 */
 	config?: ImageResizerConfig
 }
 
@@ -233,23 +235,8 @@ export interface UseImageResizerReturn {
  * @internal
  */
 export interface ResizeResult {
-	/**
-	 * The blob URL that can be used in img src attributes
-	 */
 	blobUrl: string
-
-	/**
-	 * The actual Blob object containing the image data
-	 */
 	blob: Blob
-
-	/**
-	 * Width of the resized image in pixels
-	 */
 	width: number
-
-	/**
-	 * Height of the resized image in pixels
-	 */
 	height: number
 }
