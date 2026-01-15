@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "./components/ui/button";
-import { ImageResizerProvider, resizeImage, type ImageResizerStyles } from "./lib";
+import { ImageResizerProvider, resizeImage } from "./lib";
 
 /**
  * AppContent component that uses the resizeImage function
@@ -13,9 +13,10 @@ function AppContent() {
   const handleResizeImage = () => {
     setIsLoading(true);
     resizeImage('https://files.curseduca.com/f6ccf6de9e56976a4b4032a16e5019e294221b00/8c777108.JPG', {
-      styles: {
-        dialog: { className: 'custom-dialog' },
-        controls: { className: 'hidden' },
+      classNames: {
+        dialog: "",
+        separator: "",
+        controls: 'hidden'
       }
     })
       .then((blobUrl: string) => {
@@ -74,17 +75,8 @@ function AppContent() {
  * globally accessible from any component
  */
 function App() {
-  const customStyles: ImageResizerStyles = {
-    dialog: {
-      className: "custom-dialog",
-    },
-    controls: {
-      className: "custom-controls",
-    },
-  };
-
   return (
-    <ImageResizerProvider styles={customStyles}>
+    <ImageResizerProvider>
       <AppContent />
     </ImageResizerProvider>
   );

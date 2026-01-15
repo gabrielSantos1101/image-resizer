@@ -1,5 +1,5 @@
 /**
- * Image Resizer Toast Library - Type Definitions
+ * Image Resizer Toast like Library - Type Definitions
  * 
  * This module exports all TypeScript interfaces and types used throughout
  * the Image Resizer Toast Library for full type safety and IDE support.
@@ -42,87 +42,6 @@ export interface ImageResizerClassNames {
 	cancelButton?: string
 
 	saveButton?: string
-}
-
-/**
- * Custom styles configuration for the Image Resizer UI components.
- * Allows customization of CSS classes and inline styles for various UI elements.
- * 
- * @example
- * ```typescript
- * const styles: ImageResizerStyles = {
- *   dialog: { className: 'custom-dialog' },
- *   viewport: { style: { backgroundColor: '#f0f0f0' } }
- * }
- * ```
- */
-export interface ImageResizerStyles {
-	/**
-	 * Object containing CSS class names for each customizable part of the modal.
-	 * When both classNames and individual style className properties are provided,
-	 * classNames takes precedence.
-	 */
-	classNames?: ImageResizerClassNames
-
-	dialog?: {
-		className?: string
-		style?: React.CSSProperties
-	}
-
-	viewport?: {
-		className?: string
-		style?: React.CSSProperties
-	}
-
-	selection?: {
-		className?: string
-		style?: React.CSSProperties
-	}
-
-	handle?: {
-		className?: string
-		style?: React.CSSProperties
-	}
-
-	controls?: {
-		className?: string
-		style?: React.CSSProperties
-	}
-
-	button?: {
-		className?: string
-		style?: React.CSSProperties
-	}
-
-	imageContainer?: {
-		className?: string
-		style?: React.CSSProperties
-	}
-
-	zoomDisplay?: {
-		className?: string
-		style?: React.CSSProperties
-	}
-
-	separator?: {
-		className?: string
-		style?: React.CSSProperties
-	}
-
-	footer?: {
-		className?: string
-		style?: React.CSSProperties
-	}
-
-	cancelButton?: {
-		className?: string
-		style?: React.CSSProperties
-	}
-
-	saveButton?: {
-		className?: string
-		style?: React.CSSProperties
-	}
 }
 
 /**
@@ -184,18 +103,18 @@ export interface ImageResizerContextType {
 	close: () => void
 	isOpen: boolean
 	imageUrl: string | null
-	styles?: ImageResizerStyles
+	classNames?: ImageResizerClassNames
 	config?: ImageResizerConfig
 }
 
 export interface ImageResizerProviderProps {
 	children: React.ReactNode
-	styles?: ImageResizerStyles
+	classNames?: ImageResizerClassNames
 	config?: ImageResizerConfig
 }
 
 export interface ResizeImageOptions {
-	styles?: ImageResizerStyles
+	classNames?: ImageResizerClassNames
 	config?: ImageResizerConfig
 }
 
@@ -207,7 +126,7 @@ export interface UseImageResizerReturn {
 	/**
 	 * Function to trigger the image resizer
 	 * @param imageUrl - The URL of the image to resize
-	 * @param styles - Optional custom styles to override provider-level styles
+	 * @param classNames - Optional custom class names to override provider-level class names
 	 * @param config - Optional configuration to override provider-level config
 	 * @returns A promise that resolves with the blob URL of the resized image
 	 * @throws Error if the image fails to load or canvas context cannot be created
@@ -226,7 +145,7 @@ export interface UseImageResizerReturn {
 	 *   })
 	 * ```
 	 */
-	resizeImage: (imageUrl: string, styles?: ImageResizerStyles, config?: ImageResizerConfig) => Promise<string>
+	resizeImage: (imageUrl: string, classNames?: ImageResizerClassNames, config?: ImageResizerConfig) => Promise<string>
 }
 
 /**

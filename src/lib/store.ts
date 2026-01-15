@@ -9,7 +9,7 @@
  */
 
 import { create } from 'zustand'
-import type { ImageResizerConfig, ImageResizerStyles } from './types'
+import type { ImageResizerClassNames, ImageResizerConfig } from './types'
 
 /**
  * Internal store state and actions
@@ -19,7 +19,7 @@ interface ImageResizerStoreState {
 	// State
 	isOpen: boolean
 	imageUrl: string | null
-	styles: ImageResizerStyles
+	classNames: ImageResizerClassNames
 	config: ImageResizerConfig
 	pendingResolve: ((blobUrl: string) => void) | null
 	pendingReject: ((error: Error) => void) | null
@@ -28,7 +28,7 @@ interface ImageResizerStoreState {
 	// Actions
 	open: (
 		imageUrl: string,
-		styles?: ImageResizerStyles,
+		classNames?: ImageResizerClassNames,
 		config?: ImageResizerConfig
 	) => Promise<string>
 	close: () => void
@@ -53,7 +53,7 @@ export const useImageResizerStore = create<ImageResizerStoreState>((set, get) =>
 	// Initial state
 	isOpen: false,
 	imageUrl: null,
-	styles: {},
+	classNames: {},
 	config: {},
 	pendingResolve: null,
 	pendingReject: null,
@@ -64,7 +64,7 @@ export const useImageResizerStore = create<ImageResizerStoreState>((set, get) =>
 	 * Opens the resizer dialog with the provided image URL
 	 * Returns a Promise that resolves when the user saves or rejects when they cancel
 	 */
-	open: (imageUrl, styles, config) => {
+	open: (imageUrl, classNames, config) => {
 		// Revoke any previous blob URLs before opening a new image
 		const { revokeBlobUrls } = get()
 		revokeBlobUrls()
@@ -73,7 +73,7 @@ export const useImageResizerStore = create<ImageResizerStoreState>((set, get) =>
 			set({
 				isOpen: true,
 				imageUrl,
-				styles: styles || {},
+				classNames: classNames || {},
 				config: config || {},
 				pendingResolve: resolve,
 				pendingReject: reject,

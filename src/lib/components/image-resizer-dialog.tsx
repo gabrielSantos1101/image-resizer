@@ -24,11 +24,11 @@ import { cn } from "../utils"
  * @internal
  */
 export const ImageResizerDialog = () => {
-    const { isOpen, imageUrl, styles, config, save, cancel, addBlobUrl, revokeBlobUrls } = useImageResizerStore(
+    const { isOpen, imageUrl, classNames, config, save, cancel, addBlobUrl, revokeBlobUrls } = useImageResizerStore(
         useShallow((state) => ({
             isOpen: state.isOpen,
             imageUrl: state.imageUrl,
-            styles: state.styles,
+            classNames: state.classNames,
             config: state.config,
             save: state.save,
             cancel: state.cancel,
@@ -187,23 +187,22 @@ export const ImageResizerDialog = () => {
     return (
         <Dialog open={isOpen} onOpenChange={handleOpenChange}>
             <DialogContent
-                className={cn("max-w-[70dvw]", styles?.dialog?.className)}
-                style={styles?.dialog?.style}
+                className={cn("max-w-[70dvw]", classNames?.dialog)}
             >
                 <div className="p-4 flex">
                     {imageUrl && isOpen && (
-                        <div className="flex bg-black rounded-sm image-container">
+                        <div className={cn("flex bg-black rounded-sm image-container", classNames?.imageContainer)}>
                             <div {...api.getRootProps()} className="my-auto">
-                                <div {...api.getViewportProps()}>
+                                <div {...api.getViewportProps()} className={classNames?.viewport}>
                                     <img
                                         src={imageUrl}
                                         alt="Dog to be cropped"
                                         crossOrigin="anonymous"
                                         {...api.getImageProps()}
                                     />
-                                    <div {...api.getSelectionProps()}>
+                                    <div {...api.getSelectionProps()} className={classNames?.selection}>
                                         {imageCropper.handles.map((position) => (
-                                            <div key={position} {...api.getHandleProps({ position })}>
+                                            <div key={position} {...api.getHandleProps({ position })} className={classNames?.handle}>
                                                 <div />
                                             </div>
                                         ))}
@@ -215,21 +214,18 @@ export const ImageResizerDialog = () => {
 
                     {/* Controls */}
                     <div
-                        className="flex items-center justify-center gap-2 mt-4"
-                        {...(styles?.controls?.className && { className: styles.controls.className })}
-                        style={styles?.controls?.style}
+                        className={cn("flex items-center justify-center gap-2 mt-4", classNames?.controls)}
                     >
                         <Button
                             variant="outline"
                             size="icon"
                             onClick={() => api.zoomBy(-0.1)}
                             title="Zoom out"
-                            {...(styles?.button?.className && { className: styles.button.className })}
-                            style={styles?.button?.style}
+                            className={classNames?.button}
                         >
                             <ZoomOut className="w-4 h-4" />
                         </Button>
-                        <span className="text-sm text-muted-foreground min-w-[60px] text-center">
+                        <span className={cn("text-sm text-muted-foreground min-w-[60px] text-center", classNames?.zoomDisplay)}>
                             {Math.round(api.zoom * 100)}%
                         </span>
                         <Button
@@ -237,19 +233,17 @@ export const ImageResizerDialog = () => {
                             size="icon"
                             onClick={() => api.zoomBy(0.1)}
                             title="Zoom in"
-                            {...(styles?.button?.className && { className: styles.button.className })}
-                            style={styles?.button?.style}
+                            className={classNames?.button}
                         >
                             <ZoomIn className="w-4 h-4" />
                         </Button>
-                        <div className="w-px h-6 bg-border mx-2" />
+                        <div className={cn("w-px h-6 bg-border mx-2", classNames?.separator)} />
                         <Button
                             variant="outline"
                             size="icon"
                             onClick={() => api.rotateBy(90)}
                             title="Rotate 90°"
-                            {...(styles?.button?.className && { className: styles.button.className })}
-                            style={styles?.button?.style}
+                            className={classNames?.button}
                         >
                             <RotateCw className="w-4 h-4" />
                         </Button>
@@ -258,8 +252,7 @@ export const ImageResizerDialog = () => {
                             size="icon"
                             onClick={() => api.flipHorizontally()}
                             title="Flip horizontally"
-                            {...(styles?.button?.className && { className: styles.button.className })}
-                            style={styles?.button?.style}
+                            className={classNames?.button}
                         >
                             <FlipHorizontal className="w-4 h-4" />
                         </Button>
@@ -268,19 +261,18 @@ export const ImageResizerDialog = () => {
                             size="icon"
                             onClick={() => api.flipVertically()}
                             title="Flip vertically"
-                            {...(styles?.button?.className && { className: styles.button.className })}
-                            style={styles?.button?.style}
+                            className={classNames?.button}
                         >
                             <FlipVertical className="w-4 h-4" />
                         </Button>
                     </div>
                 </div>
 
-                <DialogFooter className="flex h-fit items-baseline justify-baseline">
+                <DialogFooter className={cn("flex h-fit items-baseline justify-baseline", classNames?.footer)}>
                     <DialogClose asChild>
-                        <Button variant="outline">Cancel</Button>
+                        <Button variant="outline" className={classNames?.cancelButton}>Cancel</Button>
                     </DialogClose>
-                    <Button className="bg-primary dark:bg-primary text-white" onClick={handleSave}>
+                    <Button className={cn("bg-primary dark:bg-primary text-white", classNames?.saveButton)} onClick={handleSave}>
                         Save Crop
                     </Button>
                 </DialogFooter>
