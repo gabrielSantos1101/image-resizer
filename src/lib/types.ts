@@ -88,6 +88,13 @@ export interface ImageResizerConfig extends Partial<ZagProps> {
 	 * Only applies when imageFormat is 'image/jpeg' or 'image/webp'
 	 */
 	imageQuality?: number
+
+	/**
+	 * Type of rotation control UI (default: 'button')
+	 * 'button' - Discrete 90° rotation buttons
+	 * 'slider' - Continuous rotation slider
+	 */
+	rotationType?: 'button' | 'slider'
 }
 
 /**

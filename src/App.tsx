@@ -15,7 +15,7 @@ function AppContent() {
       classNames: {
         dialog: "",
         separator: "",
-        controls: 'hidden'
+        controls: ''
       }
     })
       .then(({ blobUrl }) => {

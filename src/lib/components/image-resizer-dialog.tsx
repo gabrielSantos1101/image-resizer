@@ -70,34 +70,6 @@ export const ImageResizerDialog = () => {
                 return
             }
 
-            // Use Zag's getCroppedImage() API to get the blob with all transformations applied
-            let croppedImage: Blob | string | null = null
-            try {
-                croppedImage = await api.getCroppedImage()
-            } catch (error) {
-                const cropError = new Error("Failed to get cropped image from Zag API")
-                console.error(cropError.message, error)
-                cancel(cropError)
-                return
-            }
-
-            if (!croppedImage) {
-                const error = new Error("Failed to create blob from cropped image")
-                console.error(error.message)
-                cancel(error)
-                return
-            }
-
-            // Convert to Blob if it's a data URL string
-            let blob: Blob
-            if (typeof croppedImage === 'string') {
-                const response = await fetch(croppedImage)
-                blob = await response.blob()
-            } else {
-                blob = croppedImage
-            }
-
-            // Extract crop data using Zag's getCropData() API
             const cropData = api.getCropData()
             if (!cropData) {
                 const error = new Error("Failed to extract crop data from Zag API")
@@ -106,21 +78,128 @@ export const ImageResizerDialog = () => {
                 return
             }
 
+            const img = new Image()
+            img.crossOrigin = "anonymous"
+
             try {
-                const blobUrl = URL.createObjectURL(blob)
-                addBlobUrl(blobUrl)
-                save(blobUrl, cropData)
+                await new Promise<void>((resolve, reject) => {
+                    img.onload = () => resolve()
+                    img.onerror = () => reject(new Error(`Failed to load image from URL: ${imageUrl}`))
+                    img.src = imageUrl
+                })
             } catch (error) {
-                const blobError = error instanceof Error ? error : new Error("Failed to process blob")
-                console.error(blobError.message)
-                cancel(blobError)
+                const loadError = error instanceof Error ? error : new Error("Image load failed")
+                console.error(loadError.message)
+                cancel(loadError)
+                return
             }
+
+            const cropWidth = cropData.width
+            const cropHeight = cropData.height
+            const rotation = api.rotation || 0
+            const rotationRad = (rotation * Math.PI) / 180
+
+            const cos = Math.abs(Math.cos(rotationRad))
+            const sin = Math.abs(Math.sin(rotationRad))
+            const boundingWidth = Math.ceil(cropWidth * cos + cropHeight * sin)
+            const boundingHeight = Math.ceil(cropWidth * sin + cropHeight * cos)
+
+            const tempCanvas = document.createElement("canvas")
+            tempCanvas.width = boundingWidth
+            tempCanvas.height = boundingHeight
+
+            const tempCtx = tempCanvas.getContext("2d")
+            if (!tempCtx) {
+                const error = new Error("Failed to create canvas context")
+                console.error(error.message)
+                cancel(error)
+                return
+            }
+
+            tempCtx.save()
+
+            tempCtx.translate(boundingWidth / 2, boundingHeight / 2)
+
+            if (rotation) {
+                tempCtx.rotate(rotationRad)
+            }
+
+            if (api.flip?.horizontal) {
+                tempCtx.scale(-1, 1)
+            }
+            if (api.flip?.vertical) {
+                tempCtx.scale(1, -1)
+            }
+
+            tempCtx.drawImage(
+                img,
+                cropData.x,
+                cropData.y,
+                cropWidth,
+                cropHeight,
+                -cropWidth / 2,
+                -cropHeight / 2,
+                cropWidth,
+                cropHeight
+            )
+
+            tempCtx.restore()
+
+            const finalCanvas = document.createElement("canvas")
+            finalCanvas.width = cropWidth
+            finalCanvas.height = cropHeight
+
+            const finalCtx = finalCanvas.getContext("2d")
+            if (!finalCtx) {
+                const error = new Error("Failed to create final canvas context")
+                console.error(error.message)
+                cancel(error)
+                return
+            }
+
+            const offsetX = (boundingWidth - cropWidth) / 2
+            const offsetY = (boundingHeight - cropHeight) / 2
+
+            finalCtx.drawImage(
+                tempCanvas,
+                offsetX,
+                offsetY,
+                cropWidth,
+                cropHeight,
+                0,
+                0,
+                cropWidth,
+                cropHeight
+            )
+
+            const imageFormat = config?.imageFormat ?? 'image/png'
+            const imageQuality = config?.imageQuality ?? 0.92
+
+            finalCanvas.toBlob(
+                (blob) => {
+                    try {
+                        if (!blob) {
+                            cancel(new Error("Failed to create blob from canvas"))
+                            return
+                        }
+                        const blobUrl = URL.createObjectURL(blob)
+                        addBlobUrl(blobUrl)
+                        save(blobUrl, cropData)
+                    } catch (error) {
+                        const blobError = error instanceof Error ? error : new Error("Failed to process blob")
+                        console.error(blobError.message)
+                        cancel(blobError)
+                    }
+                },
+                imageFormat,
+                imageQuality
+            )
         } catch (error) {
             const unexpectedError = error instanceof Error ? error : new Error("Unknown error occurred during image cropping")
             console.error("Unexpected error cropping image:", unexpectedError)
             cancel(unexpectedError)
         }
-    }, [imageUrl, api, save, cancel, addBlobUrl])
+    }, [imageUrl, api, config, save, cancel, addBlobUrl])
 
     const handleOpenChange = (open: boolean) => {
         if (!open) {
@@ -160,7 +239,6 @@ export const ImageResizerDialog = () => {
                         </div>
                     )}
 
-                    {/* Controls */}
                     <div
                         className={cn("flex items-center justify-center gap-2 mt-4", classNames?.controls)}
                     >
@@ -186,15 +264,35 @@ export const ImageResizerDialog = () => {
                             <ZoomIn className="w-4 h-4" />
                         </Button>
                         <div className={cn("w-px h-6 bg-border mx-2", classNames?.separator)} />
-                        <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => api.rotateBy(90)}
-                            title="Rotate 90°"
-                            className={classNames?.button}
-                        >
-                            <RotateCw className="w-4 h-4" />
-                        </Button>
+
+                        {config?.rotationType === 'slider' ? (
+                            <div className="flex items-center gap-2">
+                                <span className="text-sm text-muted-foreground min-w-[40px]">
+                                    {api.rotation}°
+                                </span>
+                                <input
+                                    type="range"
+                                    min="0"
+                                    max="360"
+                                    step="1"
+                                    value={api.rotation}
+                                    onChange={(e) => api.setRotation(Number(e.target.value))}
+                                    className="w-24"
+                                    title="Rotate image"
+                                />
+                            </div>
+                        ) : (
+                            <Button
+                                variant="outline"
+                                size="icon"
+                                onClick={() => api.rotateBy(90)}
+                                title="Rotate 90°"
+                                className={classNames?.button}
+                            >
+                                <RotateCw className="w-4 h-4" />
+                            </Button>
+                        )}
+
                         <Button
                             variant="outline"
                             size="icon"
