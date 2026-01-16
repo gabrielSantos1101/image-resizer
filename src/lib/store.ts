@@ -6,33 +6,33 @@
  * - Current image URL
  * - Custom styles and configuration
  * - Promise resolution/rejection callbacks
+ * - Crop data from the resize operation
  */
 
 import { create } from 'zustand'
-import type { ImageResizerClassNames, ImageResizerConfig } from './types'
+import type { CropData, ImageResizerClassNames, ImageResizerConfig, ResizeImageResult } from './types'
 
 /**
  * Internal store state and actions
  * @internal
  */
 interface ImageResizerStoreState {
-	// State
 	isOpen: boolean
 	imageUrl: string | null
 	classNames: ImageResizerClassNames
 	config: ImageResizerConfig
-	pendingResolve: ((blobUrl: string) => void) | null
+	cropData: CropData | null
+	pendingResolve: ((result: ResizeImageResult) => void) | null
 	pendingReject: ((error: Error) => void) | null
 	blobUrls: Set<string>
 
-	// Actions
 	open: (
 		imageUrl: string,
 		classNames?: ImageResizerClassNames,
 		config?: ImageResizerConfig
-	) => Promise<string>
+	) => Promise<ResizeImageResult>
 	close: () => void
-	save: (blobUrl: string) => void
+	save: (blobUrl: string, cropData?: CropData) => void
 	cancel: (error: Error) => void
 	addBlobUrl: (blobUrl: string) => void
 	revokeBlobUrls: () => void
@@ -46,35 +46,37 @@ interface ImageResizerStoreState {
  * - Current image URL being resized
  * - Custom styles and configuration
  * - Promise callbacks for async operations
+ * - Crop data from the resize operation
  * 
  * @internal
  */
 export const useImageResizerStore = create<ImageResizerStoreState>((set, get) => ({
-	// Initial state
 	isOpen: false,
 	imageUrl: null,
 	classNames: {},
 	config: {},
+	cropData: null,
 	pendingResolve: null,
 	pendingReject: null,
 	blobUrls: new Set(),
 
-	// Actions
 	/**
 	 * Opens the resizer dialog with the provided image URL
-	 * Returns a Promise that resolves when the user saves or rejects when they cancel
+	 * Returns a Promise that resolves with { blobUrl, cropData? } when the user saves
+	 * or rejects when they cancel
 	 */
 	open: (imageUrl, classNames, config) => {
 		// Revoke any previous blob URLs before opening a new image
 		const { revokeBlobUrls } = get()
 		revokeBlobUrls()
 
-		return new Promise<string>((resolve, reject) => {
+		return new Promise<ResizeImageResult>((resolve, reject) => {
 			set({
 				isOpen: true,
 				imageUrl,
 				classNames: classNames || {},
 				config: config || {},
+				cropData: null,
 				pendingResolve: resolve,
 				pendingReject: reject,
 			})
@@ -88,22 +90,24 @@ export const useImageResizerStore = create<ImageResizerStoreState>((set, get) =>
 		set({
 			isOpen: false,
 			imageUrl: null,
+			cropData: null,
 			pendingResolve: null,
 			pendingReject: null,
 		})
 	},
 
 	/**
-	 * Saves the resized image and resolves the pending Promise
+	 * Saves the resized image with optional crop data and resolves the pending Promise
 	 */
-	save: (blobUrl: string) => {
+	save: (blobUrl: string, cropData?: CropData) => {
 		const { pendingResolve } = get()
 		if (pendingResolve) {
-			pendingResolve(blobUrl)
+			pendingResolve({ blobUrl, cropData })
 		}
 		set({
 			isOpen: false,
 			imageUrl: null,
+			cropData: null,
 			pendingResolve: null,
 			pendingReject: null,
 		})
@@ -117,11 +121,12 @@ export const useImageResizerStore = create<ImageResizerStoreState>((set, get) =>
 		if (pendingReject) {
 			pendingReject(error)
 		}
-		// Clean up blob URLs on cancellation
+
 		revokeBlobUrls()
 		set({
 			isOpen: false,
 			imageUrl: null,
+			cropData: null,
 			pendingResolve: null,
 			pendingReject: null,
 		})

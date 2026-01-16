@@ -1,7 +1,7 @@
 'use client'
 
 import { useImageResizerStore } from './store'
-import type { ResizeImageOptions } from './types'
+import type { ResizeImageOptions, ResizeImageResult } from './types'
 
 /**
  * Direct function to trigger image resizing
@@ -11,18 +11,28 @@ import type { ResizeImageOptions } from './types'
  * ImageResizerProvider as an ancestor.
  * 
  * @param imageUrl - The URL of the image to resize
- * @param options - Optional configuration object with styles and config
- * @returns A promise that resolves with the blob URL when the user saves,
+ * @param options - Optional configuration object with classNames and config
+ * @returns A promise that resolves with { blobUrl, cropData? } when the user saves,
  *          or rejects if the user cancels or an error occurs
  * 
  * @example
  * ```typescript
  * import { resizeImage } from '@/lib'
  * 
- * // Simple usage
+ * // Simple usage - without crop data
  * resizeImage('https://example.com/image.jpg')
- *   .then(blobUrl => {
+ *   .then(({ blobUrl }) => {
  *     console.log('Resized image:', blobUrl)
+ *   })
+ *   .catch(error => {
+ *     console.error('Resize failed:', error)
+ *   })
+ * 
+ * // With crop data
+ * resizeImage('https://example.com/image.jpg')
+ *   .then(({ blobUrl, cropData }) => {
+ *     console.log('Resized image:', blobUrl)
+ *     console.log('Crop data:', cropData)
  *   })
  *   .catch(error => {
  *     console.error('Resize failed:', error)
@@ -30,8 +40,8 @@ import type { ResizeImageOptions } from './types'
  * 
  * // With custom options
  * resizeImage('https://example.com/image.jpg', {
- *   styles: {
- *     dialog: { className: 'custom-dialog' }
+ *   classNames: {
+ *     dialog: 'custom-dialog'
  *   },
  *   config: {
  *     imageFormat: 'image/jpeg',
@@ -43,7 +53,7 @@ import type { ResizeImageOptions } from './types'
 export function resizeImage(
 	imageUrl: string,
 	options?: ResizeImageOptions
-): Promise<string> {
+): Promise<ResizeImageResult> {
 	const store = useImageResizerStore.getState()
-	return store.open(imageUrl, options?.styles, options?.config)
+	return store.open(imageUrl, options?.classNames, options?.config)
 }

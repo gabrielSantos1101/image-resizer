@@ -118,10 +118,10 @@ export interface ImageResizerContextType {
 	/**
 	 * Opens the resizer dialog with the provided image URL
 	 * @param imageUrl - The URL of the image to resize
-	 * @returns A promise that resolves with a tuple of [blobUrl, cropData],
+	 * @returns A promise that resolves with { blobUrl, cropData? },
 	 *          or rejects if the operation is cancelled or fails
 	 */
-	open: (imageUrl: string) => Promise<[string, CropData]>
+	open: (imageUrl: string) => Promise<ResizeImageResult>
 	close: () => void
 	isOpen: boolean
 	imageUrl: string | null
@@ -135,6 +135,14 @@ export interface ResizeImageOptions {
 }
 
 /**
+ * Result of a successful image resize operation
+ */
+export interface ResizeImageResult {
+	blobUrl: string
+	cropData?: CropData
+}
+
+/**
  * Return type for the useImageResizer hook
  * @deprecated Use resizeImage function directly instead
  */
@@ -144,7 +152,7 @@ export interface UseImageResizerReturn {
 	 * @param imageUrl - The URL of the image to resize
 	 * @param classNames - Optional custom class names to override provider-level class names
 	 * @param config - Optional configuration to override provider-level config
-	 * @returns A promise that resolves with a tuple of [blobUrl, cropData]
+	 * @returns A promise that resolves with { blobUrl, cropData? }
 	 * @throws Error if the image fails to load or canvas context cannot be created
 	 * @throws Error with message 'Cancelled' if the user cancels the operation
 	 * 
@@ -152,8 +160,18 @@ export interface UseImageResizerReturn {
 	 * ```typescript
 	 * const { resizeImage } = useImageResizer()
 	 * 
+	 * // Without crop data
 	 * resizeImage('https://example.com/image.jpg')
-	 *   .then(([blobUrl, cropData]) => {
+	 *   .then(({ blobUrl }) => {
+	 *     console.log('Resized image:', blobUrl)
+	 *   })
+	 *   .catch(error => {
+	 *     console.error('Resize failed:', error)
+	 *   })
+	 * 
+	 * // With crop data
+	 * resizeImage('https://example.com/image.jpg')
+	 *   .then(({ blobUrl, cropData }) => {
 	 *     console.log('Resized image:', blobUrl)
 	 *     console.log('Crop data:', cropData)
 	 *   })
@@ -162,7 +180,7 @@ export interface UseImageResizerReturn {
 	 *   })
 	 * ```
 	 */
-	resizeImage: (imageUrl: string, classNames?: ImageResizerClassNames, config?: ImageResizerConfig) => Promise<[string, CropData]>
+	resizeImage: (imageUrl: string, classNames?: ImageResizerClassNames, config?: ImageResizerConfig) => Promise<ResizeImageResult>
 }
 
 /**

@@ -18,7 +18,7 @@ function AppContent() {
         controls: 'hidden'
       }
     })
-      .then((blobUrl: string) => {
+      .then(({ blobUrl }) => {
         console.log("✅ Imagem redimensionada com sucesso:", blobUrl);
         setCroppedImage(blobUrl);
       })
