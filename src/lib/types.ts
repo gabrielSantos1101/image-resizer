@@ -5,6 +5,8 @@
  * the Image Resizer Toast Library for full type safety and IDE support.
  */
 
+import type { CropData as ZagCropData, Props as ZagProps } from '@zag-js/image-cropper'
+
 /**
  * CSS class names for customizing individual parts of the Image Resizer modal.
  * Provides a granular, object-based approach to applying custom classes to each UI element.
@@ -45,6 +47,14 @@ export interface ImageResizerClassNames {
 }
 
 /**
+ * Crop data metadata from Zag's image cropper.
+ * Contains crop position, dimensions, rotation, and flip state in natural image coordinates.
+ * 
+ * @see {@link https://zagjs.com/components/image-cropper}
+ */
+export type CropData = ZagCropData
+
+/**
  * Configuration options for the Image Resizer behavior and output.
  * 
  * @example
@@ -53,7 +63,11 @@ export interface ImageResizerClassNames {
  *   minZoom: 0.5,
  *   maxZoom: 5,
  *   imageFormat: 'image/jpeg',
- *   imageQuality: 0.85
+ *   imageQuality: 0.85,
+ *   zag: {
+ *     cropShape: 'rectangle',
+ *     aspectRatio: 1
+ *   }
  * }
  * ```
  */
@@ -84,6 +98,14 @@ export interface ImageResizerConfig {
 	 * Only applies when imageFormat is 'image/jpeg' or 'image/webp'
 	 */
 	imageQuality?: number
+
+	/**
+	 * Native @zag-js/image-cropper configuration options
+	 * Image_Resizer options take precedence over Zag options
+	 * 
+	 * @see {@link https://zagjs.com/components/image-cropper}
+	 */
+	zag?: Partial<ZagProps>
 }
 
 /**
@@ -96,10 +118,10 @@ export interface ImageResizerContextType {
 	/**
 	 * Opens the resizer dialog with the provided image URL
 	 * @param imageUrl - The URL of the image to resize
-	 * @returns A promise that resolves with the blob URL of the resized image,
+	 * @returns A promise that resolves with a tuple of [blobUrl, cropData],
 	 *          or rejects if the operation is cancelled or fails
 	 */
-	open: (imageUrl: string) => Promise<string>
+	open: (imageUrl: string) => Promise<[string, CropData]>
 	close: () => void
 	isOpen: boolean
 	imageUrl: string | null
@@ -122,7 +144,7 @@ export interface UseImageResizerReturn {
 	 * @param imageUrl - The URL of the image to resize
 	 * @param classNames - Optional custom class names to override provider-level class names
 	 * @param config - Optional configuration to override provider-level config
-	 * @returns A promise that resolves with the blob URL of the resized image
+	 * @returns A promise that resolves with a tuple of [blobUrl, cropData]
 	 * @throws Error if the image fails to load or canvas context cannot be created
 	 * @throws Error with message 'Cancelled' if the user cancels the operation
 	 * 
@@ -131,15 +153,16 @@ export interface UseImageResizerReturn {
 	 * const { resizeImage } = useImageResizer()
 	 * 
 	 * resizeImage('https://example.com/image.jpg')
-	 *   .then(blobUrl => {
+	 *   .then(([blobUrl, cropData]) => {
 	 *     console.log('Resized image:', blobUrl)
+	 *     console.log('Crop data:', cropData)
 	 *   })
 	 *   .catch(error => {
 	 *     console.error('Resize failed:', error)
 	 *   })
 	 * ```
 	 */
-	resizeImage: (imageUrl: string, classNames?: ImageResizerClassNames, config?: ImageResizerConfig) => Promise<string>
+	resizeImage: (imageUrl: string, classNames?: ImageResizerClassNames, config?: ImageResizerConfig) => Promise<[string, CropData]>
 }
 
 /**
@@ -150,6 +173,7 @@ export interface UseImageResizerReturn {
 export interface ResizeResult {
 	blobUrl: string
 	blob: Blob
+	cropData: CropData
 	width: number
 	height: number
 }
