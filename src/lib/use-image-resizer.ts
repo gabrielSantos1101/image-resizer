@@ -1,7 +1,7 @@
 'use client'
 
 import { useImageResizerStore } from './store'
-import type { ImageResizerConfig, ImageResizerStyles, ResizeImageResult, UseImageResizerReturn } from './types'
+import type { ImageResizerClassNames, ImageResizerConfig, ResizeImageResult, UseImageResizerReturn } from './types'
 
 /**
  * Hook to access the image resizer functionality
@@ -47,17 +47,17 @@ export function useImageResizer(): UseImageResizerReturn {
 	 * Trigger function that opens the resizer dialog with the provided image URL
 	 * 
 	 * @param imageUrl - The URL of the image to resize
-	 * @param styles - Optional custom styles to override provider-level styles
+	 * @param classNames - Optional custom class names to override provider-level class names
 	 * @param config - Optional configuration to override provider-level config
 	 * @returns A promise that resolves with { blobUrl, cropData? } when the user saves,
 	 *          or rejects if the user cancels or an error occurs
 	 */
 	const resizeImage = (
 		imageUrl: string,
-		styles?: ImageResizerStyles,
+		classNames?: ImageResizerClassNames,
 		config?: ImageResizerConfig
 	): Promise<ResizeImageResult> => {
-		return open(imageUrl, styles, config)
+		return open(imageUrl, classNames, config)
 	}
 
 	return {

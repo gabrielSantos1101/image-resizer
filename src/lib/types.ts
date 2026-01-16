@@ -22,27 +22,16 @@ import type { CropData as ZagCropData, Props as ZagProps } from '@zag-js/image-c
  */
 export interface ImageResizerClassNames {
 	dialog?: string
-
 	viewport?: string
-
 	selection?: string
-
 	handle?: string
-
 	controls?: string
-
 	button?: string
-
 	imageContainer?: string
-
 	zoomDisplay?: string
-
 	separator?: string
-
 	footer?: string
-
 	cancelButton?: string
-
 	saveButton?: string
 }
 
@@ -56,6 +45,7 @@ export type CropData = ZagCropData
 
 /**
  * Configuration options for the Image Resizer behavior and output.
+ * Extends Zag's native configuration options.
  * 
  * @example
  * ```typescript
@@ -64,21 +54,21 @@ export type CropData = ZagCropData
  *   maxZoom: 5,
  *   imageFormat: 'image/jpeg',
  *   imageQuality: 0.85,
- *   zag: {
- *     cropShape: 'rectangle',
- *     aspectRatio: 1
- *   }
+ *   cropShape: 'rectangle',
+ *   aspectRatio: 1
  * }
  * ```
  */
-export interface ImageResizerConfig {
+export interface ImageResizerConfig extends Partial<ZagProps> {
 	/**
 	 * Minimum zoom level allowed (default: 1)
+	 * Image_Resizer option that takes precedence over Zag's minZoom
 	 */
 	minZoom?: number
 
 	/**
 	 * Maximum zoom level allowed (default: 3)
+	 * Image_Resizer option that takes precedence over Zag's maxZoom
 	 */
 	maxZoom?: number
 
@@ -98,14 +88,6 @@ export interface ImageResizerConfig {
 	 * Only applies when imageFormat is 'image/jpeg' or 'image/webp'
 	 */
 	imageQuality?: number
-
-	/**
-	 * Native @zag-js/image-cropper configuration options
-	 * Image_Resizer options take precedence over Zag options
-	 * 
-	 * @see {@link https://zagjs.com/components/image-cropper}
-	 */
-	zag?: Partial<ZagProps>
 }
 
 /**

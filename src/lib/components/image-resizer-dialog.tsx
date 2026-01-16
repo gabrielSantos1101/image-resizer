@@ -41,6 +41,7 @@ export const ImageResizerDialog = () => {
     const machineId = `${id}-${imageUrl}`
 
     const service = useMachine(imageCropper.machine, {
+        ...config,
         id: machineId,
         minZoom: config.minZoom ?? 1,
         maxZoom: config.maxZoom ?? 3,
@@ -69,109 +70,57 @@ export const ImageResizerDialog = () => {
                 return
             }
 
-            const selectionEl = document.querySelector('[data-scope="image-cropper"][data-part="selection"]') as HTMLElement
-            const imageEl = document.querySelector('[data-scope="image-cropper"][data-part="image"]') as HTMLImageElement
+            // Use Zag's getCroppedImage() API to get the blob with all transformations applied
+            let croppedImage: Blob | string | null = null
+            try {
+                croppedImage = await api.getCroppedImage()
+            } catch (error) {
+                const cropError = new Error("Failed to get cropped image from Zag API")
+                console.error(cropError.message, error)
+                cancel(cropError)
+                return
+            }
 
-            if (!selectionEl || !imageEl) {
-                const error = new Error("Cropper elements not found")
+            if (!croppedImage) {
+                const error = new Error("Failed to create blob from cropped image")
                 console.error(error.message)
                 cancel(error)
                 return
             }
 
-            const selectionRect = selectionEl.getBoundingClientRect()
-            const imageRect = imageEl.getBoundingClientRect()
-
-            const relX = selectionRect.left - imageRect.left
-            const relY = selectionRect.top - imageRect.top
-            const relWidth = selectionRect.width
-            const relHeight = selectionRect.height
-
-            const scaleX = imageEl.naturalWidth / imageRect.width
-            const scaleY = imageEl.naturalHeight / imageRect.height
-
-            const cropX = Math.max(0, relX * scaleX)
-            const cropY = Math.max(0, relY * scaleY)
-            const cropWidth = Math.min(relWidth * scaleX, imageEl.naturalWidth - cropX)
-            const cropHeight = Math.min(relHeight * scaleY, imageEl.naturalHeight - cropY)
-
-            const canvas = document.createElement("canvas")
-            canvas.width = cropWidth
-            canvas.height = cropHeight
-
-            let ctx: CanvasRenderingContext2D | null = null
-            try {
-                ctx = canvas.getContext("2d")
-            } catch (error) {
-                const contextError = new Error("Failed to create canvas context")
-                console.error(contextError.message, error)
-                cancel(contextError)
-                return
+            // Convert to Blob if it's a data URL string
+            let blob: Blob
+            if (typeof croppedImage === 'string') {
+                const response = await fetch(croppedImage)
+                blob = await response.blob()
+            } else {
+                blob = croppedImage
             }
 
-            if (!ctx) {
-                const error = new Error("Canvas context is null")
+            // Extract crop data using Zag's getCropData() API
+            const cropData = api.getCropData()
+            if (!cropData) {
+                const error = new Error("Failed to extract crop data from Zag API")
                 console.error(error.message)
                 cancel(error)
                 return
             }
 
-            const img = new Image()
-            img.crossOrigin = "anonymous"
-
             try {
-                await new Promise<void>((resolve, reject) => {
-                    img.onload = () => resolve()
-                    img.onerror = () => {
-                        reject(new Error(`Failed to load image from URL: ${imageUrl}`))
-                    }
-                    img.src = imageUrl
-                })
+                const blobUrl = URL.createObjectURL(blob)
+                addBlobUrl(blobUrl)
+                save(blobUrl, cropData)
             } catch (error) {
-                const loadError = error instanceof Error ? error : new Error("Image load failed")
-                console.error(loadError.message)
-                cancel(loadError)
-                return
+                const blobError = error instanceof Error ? error : new Error("Failed to process blob")
+                console.error(blobError.message)
+                cancel(blobError)
             }
-
-            try {
-                ctx.drawImage(img, cropX, cropY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight)
-            } catch (error) {
-                const drawError = new Error("Failed to draw image on canvas")
-                console.error(drawError.message, error)
-                cancel(drawError)
-                return
-            }
-
-            const imageFormat = config.imageFormat ?? 'image/png'
-            const imageQuality = config.imageQuality ?? 0.92
-
-            canvas.toBlob(
-                (blob) => {
-                    try {
-                        if (!blob) {
-                            cancel(new Error("Failed to create blob from canvas"))
-                            return
-                        }
-
-                        const blobUrl = URL.createObjectURL(blob)
-                        addBlobUrl(blobUrl)
-                        save(blobUrl)
-                    } catch (error) {
-                        const blobError = error instanceof Error ? error : new Error("Failed to process blob")
-                        console.error(blobError.message)
-                        cancel(blobError)
-                    }
-                },
-                imageFormat,
-                imageQuality,
-            )
         } catch (error) {
             const unexpectedError = error instanceof Error ? error : new Error("Unknown error occurred during image cropping")
             console.error("Unexpected error cropping image:", unexpectedError)
             cancel(unexpectedError)
         }
-    }, [imageUrl, config, save, cancel, addBlobUrl])
+    }, [imageUrl, api, save, cancel, addBlobUrl])
 
     const handleOpenChange = (open: boolean) => {
         if (!open) {

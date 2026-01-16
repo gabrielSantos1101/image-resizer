@@ -12,27 +12,21 @@ import type { ResizeImageOptions, ResizeImageResult } from './types'
  * 
  * @param imageUrl - The URL of the image to resize
  * @param options - Optional configuration object with classNames and config
- * @returns A promise that resolves with { blobUrl, cropData? } when the user saves,
- *          or rejects if the user cancels or an error occurs
+ * @returns A promise that resolves with { blobUrl, cropData } when the user saves,
+ *          or rejects if the user cancels or an error occurs.
+ *          The cropData includes position, dimensions, rotation, flip state, and zoom level.
  * 
  * @example
  * ```typescript
  * import { resizeImage } from '@/lib'
  * 
- * // Simple usage - without crop data
- * resizeImage('https://example.com/image.jpg')
- *   .then(({ blobUrl }) => {
- *     console.log('Resized image:', blobUrl)
- *   })
- *   .catch(error => {
- *     console.error('Resize failed:', error)
- *   })
- * 
- * // With crop data
+ * // Basic usage - get both blob URL and crop data
  * resizeImage('https://example.com/image.jpg')
  *   .then(({ blobUrl, cropData }) => {
  *     console.log('Resized image:', blobUrl)
- *     console.log('Crop data:', cropData)
+ *     console.log('Crop metadata:', cropData)
+ *     // cropData includes: x, y, width, height, naturalX, naturalY, 
+ *     // naturalWidth, naturalHeight, rotation, flip, zoom
  *   })
  *   .catch(error => {
  *     console.error('Resize failed:', error)
@@ -45,9 +39,17 @@ import type { ResizeImageOptions, ResizeImageResult } from './types'
  *   },
  *   config: {
  *     imageFormat: 'image/jpeg',
- *     imageQuality: 0.85
+ *     imageQuality: 0.85,
+ *     zag: {
+ *       aspectRatio: 1,
+ *       cropShape: 'circle'
+ *     }
  *   }
  * })
+ *   .then(({ blobUrl, cropData }) => {
+ *     // Save both the image and metadata
+ *     saveToDatabase(blobUrl, cropData)
+ *   })
  * ```
  */
 export function resizeImage(
