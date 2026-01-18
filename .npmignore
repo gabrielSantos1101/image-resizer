@@ -1,0 +1,12 @@
+src/
+.git/
+.gitignore
+node_modules/
+pnpm-lock.yaml
+tsconfig.app.json
+tsconfig.node.json
+vite.config.ts
+eslint.config.js
+index.html
+public/
+.eslintignore

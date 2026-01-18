@@ -1,15 +1,15 @@
 "use client"
 
-import { Button } from "@/components/ui/button"
-import { Dialog, DialogClose, DialogContent, DialogFooter } from "@/components/ui/dialog"
+import { useImageResizerStore } from "@/lib/store"
+import { cn } from "@/lib/utils"
 import * as imageCropper from "@zag-js/image-cropper"
 import { normalizeProps, useMachine } from "@zag-js/react"
 import { FlipHorizontal, FlipVertical, RotateCw, ZoomIn, ZoomOut } from "lucide-react"
 import { useCallback, useEffect, useId } from "react"
 import { useShallow } from "zustand/react/shallow"
-import { useImageResizerStore } from "../store"
-import "../styles/image-resizer-dialog.css"
-import { cn } from "../utils"
+import { Button } from "../ui/button"
+import { Dialog, DialogClose, DialogContent, DialogFooter } from "../ui/dialog"
+import './styles.css'
 
 /**
  * ImageResizerDialog Component
@@ -78,122 +78,28 @@ export const ImageResizerDialog = () => {
                 return
             }
 
-            const img = new Image()
-            img.crossOrigin = "anonymous"
-
-            try {
-                await new Promise<void>((resolve, reject) => {
-                    img.onload = () => resolve()
-                    img.onerror = () => reject(new Error(`Failed to load image from URL: ${imageUrl}`))
-                    img.src = imageUrl
-                })
-            } catch (error) {
-                const loadError = error instanceof Error ? error : new Error("Image load failed")
-                console.error(loadError.message)
-                cancel(loadError)
+            const result = await api.getCroppedImage()
+            if (!result) {
+                cancel(new Error("Failed to get cropped image"))
                 return
             }
 
-            const cropWidth = cropData.width
-            const cropHeight = cropData.height
-            const rotation = api.rotation || 0
-            const rotationRad = (rotation * Math.PI) / 180
+            let blob: Blob | null = null
+            if (result instanceof Blob) {
+                blob = result
+            } else if (typeof result === 'string') {
+                const response = await fetch(result)
+                blob = await response.blob()
+            }
 
-            const cos = Math.abs(Math.cos(rotationRad))
-            const sin = Math.abs(Math.sin(rotationRad))
-            const boundingWidth = Math.ceil(cropWidth * cos + cropHeight * sin)
-            const boundingHeight = Math.ceil(cropWidth * sin + cropHeight * cos)
-
-            const tempCanvas = document.createElement("canvas")
-            tempCanvas.width = boundingWidth
-            tempCanvas.height = boundingHeight
-
-            const tempCtx = tempCanvas.getContext("2d")
-            if (!tempCtx) {
-                const error = new Error("Failed to create canvas context")
-                console.error(error.message)
-                cancel(error)
+            if (!blob) {
+                cancel(new Error("Failed to create blob from cropped image"))
                 return
             }
 
-            tempCtx.save()
-
-            tempCtx.translate(boundingWidth / 2, boundingHeight / 2)
-
-            if (rotation) {
-                tempCtx.rotate(rotationRad)
-            }
-
-            if (api.flip?.horizontal) {
-                tempCtx.scale(-1, 1)
-            }
-            if (api.flip?.vertical) {
-                tempCtx.scale(1, -1)
-            }
-
-            tempCtx.drawImage(
-                img,
-                cropData.x,
-                cropData.y,
-                cropWidth,
-                cropHeight,
-                -cropWidth / 2,
-                -cropHeight / 2,
-                cropWidth,
-                cropHeight
-            )
-
-            tempCtx.restore()
-
-            const finalCanvas = document.createElement("canvas")
-            finalCanvas.width = cropWidth
-            finalCanvas.height = cropHeight
-
-            const finalCtx = finalCanvas.getContext("2d")
-            if (!finalCtx) {
-                const error = new Error("Failed to create final canvas context")
-                console.error(error.message)
-                cancel(error)
-                return
-            }
-
-            const offsetX = (boundingWidth - cropWidth) / 2
-            const offsetY = (boundingHeight - cropHeight) / 2
-
-            finalCtx.drawImage(
-                tempCanvas,
-                offsetX,
-                offsetY,
-                cropWidth,
-                cropHeight,
-                0,
-                0,
-                cropWidth,
-                cropHeight
-            )
-
-            const imageFormat = config?.imageFormat ?? 'image/png'
-            const imageQuality = config?.imageQuality ?? 0.92
-
-            finalCanvas.toBlob(
-                (blob) => {
-                    try {
-                        if (!blob) {
-                            cancel(new Error("Failed to create blob from canvas"))
-                            return
-                        }
-                        const blobUrl = URL.createObjectURL(blob)
-                        addBlobUrl(blobUrl)
-                        save(blobUrl, cropData)
-                    } catch (error) {
-                        const blobError = error instanceof Error ? error : new Error("Failed to process blob")
-                        console.error(blobError.message)
-                        cancel(blobError)
-                    }
-                },
-                imageFormat,
-                imageQuality
-            )
+            const blobUrl = URL.createObjectURL(blob)
+            addBlobUrl(blobUrl)
+            save(blobUrl, cropData)
         } catch (error) {
             const unexpectedError = error instanceof Error ? error : new Error("Unknown error occurred during image cropping")
             console.error("Unexpected error cropping image:", unexpectedError)

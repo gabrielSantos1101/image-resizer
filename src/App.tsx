@@ -1,85 +1,41 @@
-import { useState } from "react";
-import { Button } from "./components/ui/button";
-import { ImageResizerProvider, resizeImage } from "./lib";
+import { useState } from 'react'
+import reactLogo from './assets/react.svg'
+import { resizeImage } from './lib/resize-image'
+import viteLogo from '/vite.svg'
 
-/**
- * AppContent component that uses the resizeImage function
- */
-function AppContent() {
-  const [croppedImage, setCroppedImage] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-
-  const handleResizeImage = () => {
-    setIsLoading(true);
-    resizeImage('https://files.curseduca.com/f6ccf6de9e56976a4b4032a16e5019e294221b00/8c777108.JPG', {
-      classNames: {
-        dialog: "",
-        separator: "",
-        controls: ''
-      }
-    })
-      .then(({ blobUrl }) => {
-        console.log("✅ Imagem redimensionada com sucesso:", blobUrl);
-        setCroppedImage(blobUrl);
-      })
-      .catch((error: Error) => {
-        console.error("❌ Erro ao redimensionar imagem:", error);
-      })
-      .finally(() => {
-        setIsLoading(false);
-      });
-  };
-
-  return (
-    <main className="w-dvw h-dvh flex flex-col items-center justify-center py-14 px-8 space-y-4">
-      <h1 className="text-4xl font-bold text-white">Image Resizer Test</h1>
-
-      <Button
-        className="text-white"
-        onClick={handleResizeImage}
-        disabled={isLoading}
-      >
-        {isLoading ? "Processando..." : "Recortar Imagem"}
-      </Button>
-
-      {
-        croppedImage && (
-          <div className="mt-8 p-4 bg-gray-900 rounded-lg border border-gray-700">
-            <h2 className="text-xl font-bold text-white mb-4">📸 Preview da Imagem Recortada</h2>
-            <div className="flex flex-col gap-4">
-              <div>
-                <img
-                  src={croppedImage}
-                  alt="Imagem recortada"
-                  className="rounded-lg aspect-auto max-h-[50dvh] max-w-[70dvw] w-auto border border-gray-600"
-                />
-              </div>
-              <button
-                onClick={() => setCroppedImage(null)}
-                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded w-fit"
-              >
-                Limpar Preview
-              </button>
-            </div>
-          </div>
-        )
-      }
-    </main >
-  );
-}
-
-/**
- * Main App component
- * The ImageResizerProvider is placed at the root to make the image resizer
- * globally accessible from any component
- */
 function App() {
+  const [image, setImage] = useState('')
+
+  async function handleResizeImage() {
+    const { blobUrl } = await resizeImage('https://images.unsplash.com/photo-1763839361290-4d711e42ab5f?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')
+    setImage(blobUrl)
+
+  }
+
   return (
-    <>
-      <ImageResizerProvider />
-      <AppContent />
-    </>
-  );
+    <div className='h-dvh w-dvw grid place-items-center'>
+      <div className='flex flex-col items-center mx-auto'>
+        <div className='flex'>
+          <a href="https://vite.dev" target="_blank">
+            <img src={viteLogo} className="logo" alt="Vite logo" />
+          </a>
+          <a href="https://react.dev" target="_blank">
+            <img src={reactLogo} className="logo react" alt="React logo" />
+          </a>
+        </div>
+        <h1>Vite + React</h1>
+        <div className="flex flex-col items-center">
+          <button onClick={handleResizeImage}>
+            count is
+          </button>
+          <p>
+            Edit <code>src/App.tsx</code> and save to test HMR
+          </p>
+        </div>
+        {image && <img src={image} />}
+      </div>
+    </div>
+  )
 }
 
 export default App
